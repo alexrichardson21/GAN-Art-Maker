@@ -11,14 +11,20 @@ from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
 import sys
+import cv2
+import skimage.transform
 
 import numpy as np
+import pandas as pd
+import sqlite3
+import glob
+
 
 class GAN():
     def __init__(self):
-        self.img_rows = 28
-        self.img_cols = 28
-        self.channels = 1
+        self.img_rows = 200
+        self.img_cols = 200
+        self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
         optimizer = Adam(0.0002, 0.5)
@@ -26,8 +32,8 @@ class GAN():
         # Build and compile the discriminator
         self.discriminator = self.build_discriminator()
         self.discriminator.compile(loss='binary_crossentropy',
-            optimizer=optimizer,
-            metrics=['accuracy'])
+                                   optimizer=optimizer,
+                                   metrics=['accuracy'])
 
         # Build and compile the generator
         self.generator = self.build_generator()
@@ -95,11 +101,7 @@ class GAN():
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        (X_train, _), (_, _) = mnist.load_data()
-        print(X_train[0])
-        # Rescale -1 to 1
-        X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-        X_train = np.expand_dims(X_train, axis=3)
+        X_train = self.load_images()
 
         half_batch = int(batch_size / 2)
 
@@ -119,10 +121,11 @@ class GAN():
             gen_imgs = self.generator.predict(noise)
 
             # Train the discriminator
-            d_loss_real = self.discriminator.train_on_batch(imgs, np.ones((half_batch, 1)))
-            d_loss_fake = self.discriminator.train_on_batch(gen_imgs, np.zeros((half_batch, 1)))
+            d_loss_real = self.discriminator.train_on_batch(
+                imgs, np.ones((half_batch, 1)))
+            d_loss_fake = self.discriminator.train_on_batch(
+                gen_imgs, np.zeros((half_batch, 1)))
             d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
-
 
             # ---------------------
             #  Train Generator
@@ -138,7 +141,8 @@ class GAN():
             g_loss = self.combined.train_on_batch(noise, valid_y)
 
             # Plot the progress
-            print ("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
+            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" %
+                  (epoch, d_loss[0], 100*d_loss[1], g_loss))
 
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
@@ -156,13 +160,21 @@ class GAN():
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i,j].imshow(gen_imgs[cnt, :,:,0], cmap='gray')
-                axs[i,j].axis('off')
+                axs[i, j].imshow(gen_imgs[cnt, :, :, :])
+                axs[i, j].axis('off')
                 cnt += 1
-        fig.savefig("images/mnist_%d.png" % epoch)
+        fig.savefig("images/art_%d.png" % epoch)
         plt.close()
 
+    def load_images(self):
+        imgs = []
+        for filepath in glob.iglob('./bam_train/*.jpg'):
+            img = cv2.imread(filepath, 3)
+            # resize image
+            img = skimage.transform.resize(img, (200, 200))
+            imgs.append(img)
+        return np.array(imgs)
 
 if __name__ == '__main__':
     gan = GAN()
-    gan.train(epochs=30000, batch_size=32, save_interval=200)
+    gan.train(epochs=10000, batch_size=32, save_interval=200)

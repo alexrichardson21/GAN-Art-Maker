@@ -105,5 +105,9 @@ venv.bak/
 
 
 /images
-launch.json
-settings.json
+/.vscode
+/train
+/bam_train
+csv_image_downloader.py
+*.csv
+*.sqlite
