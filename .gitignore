@@ -111,3 +111,5 @@ venv.bak/
 csv_image_downloader.py
 *.csv
 *.sqlite
+samples
+select_train

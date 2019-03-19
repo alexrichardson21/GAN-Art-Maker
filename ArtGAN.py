@@ -9,10 +9,13 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 
 import matplotlib.pyplot as plt
-
+import random
 import sys
 import cv2
 import skimage.transform
+from PIL import Image
+import math
+
 
 import numpy as np
 import pandas as pd
@@ -101,7 +104,10 @@ class GAN():
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        X_train = self.load_images()
+        X_train = self.load_images(100)
+
+        X_train = (X_train.astype(np.float32) - 127.5) / 127.5
+        # X_train = np.expand_dims(X_train, axis=3)
 
         half_batch = int(batch_size / 2)
 
@@ -166,15 +172,59 @@ class GAN():
         fig.savefig("images/art_%d.png" % epoch)
         plt.close()
 
-    def load_images(self):
+    def load_images(self, epochs):
         imgs = []
-        for filepath in glob.iglob('./bam_train/*.jpg'):
-            img = cv2.imread(filepath, 3)
-            # resize image
-            img = skimage.transform.resize(img, (200, 200))
-            imgs.append(img)
+        for index, filepath in enumerate(glob.iglob('./select_train/*.jpg')):
+            # open image
+            print(filepath)
+            img = Image.open(filepath) #.convert('L')
+            
+            for _ in range(epochs):
+                # random numbers for crop and rotate
+                rand_theta = random.randint(-180, 180)
+                # randomly cropped, rotated, and flipped image
+                # if index % 100:
+                imgs.append(self.transform_image(img, rand_theta))
         return np.array(imgs)
+
+    def transform_image(self, img, deg):
+        
+        width = img.size[0]
+        height = img.size[1]
+        rand_x = random.randint(0, width-self.img_rows)
+        rand_y = random.randint(0, height-self.img_cols)
+        img = img.rotate(deg)
+        # c = 0
+        # while True or c > 15:
+        #     rand_x = random.randint(0, width-self.img_rows)
+        #     rand_y = random.randint(0, height-self.img_cols)
+
+        #     corner_pixels = [(rand_x, rand_y), ]
+        #     corner_pixels.append(img.getpixel(
+        #         (rand_x, rand_y)))  # top left
+        #     corner_pixels.append(img.getpixel(
+        #         (rand_x + self.img_rows, rand_y)))  # top right
+        #     corner_pixels.append(img.getpixel(
+        #         (rand_x, rand_y + self.img_cols)))  # bottom left
+        #     corner_pixels.append(img.getpixel(
+        #         (rand_x + self.img_rows, rand_y + self.img_cols)))  # bottom right
+
+        #     if (0,0,0) not in corner_pixels:
+        #         break
+            
+        #     c += 1
+
+        img = img.transform(
+            (self.img_rows, self.img_cols),
+            Image.EXTENT,
+            (rand_x, rand_y, rand_x + self.img_rows, rand_y + self.img_cols)
+        )
+
+        img_data = list(img.getdata())
+        # img.show()
+        
+        return np.array(img_data).reshape(self.img_rows, self.img_cols, self.channels)
 
 if __name__ == '__main__':
     gan = GAN()
-    gan.train(epochs=10000, batch_size=32, save_interval=200)
+    gan.train(epochs=20000, batch_size=32, save_interval=100)

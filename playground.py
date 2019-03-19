@@ -2,8 +2,18 @@ import cv2
 import skimage.transform
 import glob
 import numpy as np
-im = cv2.imread("./bam_train/182189.jpg", 3)
+from PIL import Image
+import random
 
+im = Image.open("./bam_train/182189.jpg")
+im.show()
+im_0 = im.rotate(45)
+im_0.show()
+im_1 = im.rotate(90)
+im_1.show()
+im_2 = im.rotate(180)
+im_2.show()
+im.transpose(Image.FLIP_LEFT_RIGHT)
 
 def load_images():
     imgs = []
@@ -14,5 +24,5 @@ def load_images():
         imgs.append(img)
     return np.array(imgs)
 
-imgs = load_images()
-print(imgs.shape)
+# imgs = load_images()
+# print(imgs.shape)
