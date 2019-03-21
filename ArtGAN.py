@@ -25,8 +25,8 @@ import glob
 
 class GAN():
     def __init__(self):
-        self.img_rows = 200
-        self.img_cols = 200
+        self.img_rows = 500
+        self.img_cols = 500
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
@@ -155,7 +155,7 @@ class GAN():
                 self.save_imgs(epoch)
 
     def save_imgs(self, epoch):
-        r, c = 5, 5
+        r, c = 3, 3
         noise = np.random.normal(0, 1, (r * c, 100))
         gen_imgs = self.generator.predict(noise)
 
@@ -174,56 +174,58 @@ class GAN():
 
     def load_images(self, epochs):
         imgs = []
-        for index, filepath in enumerate(glob.iglob('./select_train/*.jpg')):
+        for filepath in glob.iglob('./select_train/*.jpg'):
             # open image
             print(filepath)
             img = Image.open(filepath) #.convert('L')
             
-            for _ in range(epochs):
-                # random numbers for crop and rotate
+            for epoch in range(epochs):
                 rand_theta = random.randint(-180, 180)
-                # randomly cropped, rotated, and flipped image
-                # if index % 100:
-                imgs.append(self.transform_image(img, rand_theta))
+                new_img = self.transform_image(img, rand_theta)
+                # if epoch % 20 == 0:
+                #     new_img.save('./samples/' + str(img.im.id) + '_' + str(epoch) + '.jpeg', 'JPEG')
+                img_data = list(new_img.getdata())
+                imgs.append(np.array(img_data).reshape(
+                    self.img_rows, self.img_cols, self.channels))
         return np.array(imgs)
 
-    def transform_image(self, img, deg):
-        
-        width = img.size[0]
-        height = img.size[1]
-        rand_x = random.randint(0, width-self.img_rows)
-        rand_y = random.randint(0, height-self.img_cols)
-        img = img.rotate(deg)
-        # c = 0
-        # while True or c > 15:
-        #     rand_x = random.randint(0, width-self.img_rows)
-        #     rand_y = random.randint(0, height-self.img_cols)
+    def transform_image(self, img, theta):
+        w, h = img.size
+        skew = random.random()*2 - 1
 
-        #     corner_pixels = [(rand_x, rand_y), ]
-        #     corner_pixels.append(img.getpixel(
-        #         (rand_x, rand_y)))  # top left
-        #     corner_pixels.append(img.getpixel(
-        #         (rand_x + self.img_rows, rand_y)))  # top right
-        #     corner_pixels.append(img.getpixel(
-        #         (rand_x, rand_y + self.img_cols)))  # bottom left
-        #     corner_pixels.append(img.getpixel(
-        #         (rand_x + self.img_rows, rand_y + self.img_cols)))  # bottom right
-
-        #     if (0,0,0) not in corner_pixels:
-        #         break
-            
-        #     c += 1
-
+        xshift = abs(skew) * w
+        new_width = w + int(round(xshift))
         img = img.transform(
-            (self.img_rows, self.img_cols),
-            Image.EXTENT,
-            (rand_x, rand_y, rand_x + self.img_rows, rand_y + self.img_cols)
-        )
+            (new_width, h), Image.AFFINE,
+            (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), Image.BICUBIC)
+        
+        img = img.rotate(theta)
+        w, h = img.size
+        rand_points = []
 
-        img_data = list(img.getdata())
+        while len(rand_points) < 4:
+            # rand top left corner
+            rand_x, rand_y = random.randint(0, int(w/2)), random.randint(0, int(h/2))
+            # rand side length greater than 100
+            rand_side = random.randint(150, min((w-rand_x), (h-rand_y)) - 1)
+            rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
+                           (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
+            # checks if all corners are part of picture
+            # print (str(w) + ' ' + str(h))
+            # print(rand_points[3])
+            for x, y in rand_points:
+                if img.getpixel((x, y)) == (0, 0, 0):
+                    rand_points.remove((x, y))
+
+        box = (rand_x, rand_y, rand_x+rand_side, rand_y+rand_side)
+
+        img = img.resize(
+            (self.img_rows, self.img_cols),
+            Image.LANCZOS,
+            box)
         # img.show()
         
-        return np.array(img_data).reshape(self.img_rows, self.img_cols, self.channels)
+        return img
 
 if __name__ == '__main__':
     gan = GAN()

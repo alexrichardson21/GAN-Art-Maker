@@ -113,3 +113,4 @@ csv_image_downloader.py
 *.sqlite
 samples
 select_train
+playground
