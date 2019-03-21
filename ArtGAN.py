@@ -104,7 +104,7 @@ class GAN():
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        X_train = self.load_images(100)
+        X_train = self.load_images(200)
 
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
         # X_train = np.expand_dims(X_train, axis=3)
@@ -205,9 +205,9 @@ class GAN():
 
         while len(rand_points) < 4:
             # rand top left corner
-            rand_x, rand_y = random.randint(0, int(w/2)), random.randint(0, int(h/2))
+            rand_x, rand_y = random.randint(0, int(w/3)), random.randint(0, int(h/3))
             # rand side length greater than 100
-            rand_side = random.randint(150, min((w-rand_x), (h-rand_y)) - 1)
+            rand_side = random.randint(200, min((w-rand_x), (h-rand_y)) - 1)
             rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
                            (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
             # checks if all corners are part of picture
