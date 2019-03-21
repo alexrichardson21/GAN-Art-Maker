@@ -113,5 +113,4 @@ csv_image_downloader.py
 *.sqlite
 *.sqbpro
 samples
-select_train
 playground.py
