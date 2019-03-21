@@ -111,6 +111,7 @@ venv.bak/
 csv_image_downloader.py
 *.csv
 *.sqlite
+*.sqbpro
 samples
 select_train
 playground.py

@@ -104,7 +104,7 @@ class GAN():
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        X_train = self.load_images(200)
+        X_train = self.load_images(100)
 
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
         # X_train = np.expand_dims(X_train, axis=3)
@@ -175,50 +175,57 @@ class GAN():
     def load_images(self, epochs):
         imgs = []
         for filepath in glob.iglob('./select_train/*.jpg'):
-            # open image
             print(filepath)
             img = Image.open(filepath) #.convert('L')
             
-            for epoch in range(epochs):
-                rand_theta = random.randint(-180, 180)
-                new_img = self.transform_image(img, rand_theta)
-                # if epoch % 20 == 0:
-                #     new_img.save('./samples/' + str(img.im.id) + '_' + str(epoch) + '.jpeg', 'JPEG')
-                img_data = list(new_img.getdata())
-                imgs.append(np.array(img_data).reshape(
-                    self.img_rows, self.img_cols, self.channels))
+            for _ in range(epochs):
+                new_img = self.transform_image(img)
+                if new_img:
+                    print('.', end='', flush=True)
+                    img_data = list(new_img.getdata())
+                    imgs.append(np.array(img_data).reshape(
+                        self.img_rows, self.img_cols, self.channels))
+                else:
+                    print('x', end='', flush=True)
+            print()
         return np.array(imgs)
 
-    def transform_image(self, img, theta):
+    def transform_image(self, img):
+        # Skew
+        ################
         w, h = img.size
         skew = random.random()*2 - 1
-
         xshift = abs(skew) * w
         new_width = w + int(round(xshift))
         img = img.transform(
             (new_width, h), Image.AFFINE,
             (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), Image.BICUBIC)
-        
+        # Rotate
+        ################
+        theta = random.randint(-180, 180)
         img = img.rotate(theta)
+        # Random Crop
+        #################
         w, h = img.size
         rand_points = []
-
+        c = 0
         while len(rand_points) < 4:
+            if c >= 20:
+                return None
             # rand top left corner
             rand_x, rand_y = random.randint(0, int(w/3)), random.randint(0, int(h/3))
-            # rand side length greater than 100
-            rand_side = random.randint(200, min((w-rand_x), (h-rand_y)) - 1)
+            # rand side length greater than 150
+            rand_side = random.randint(150, min((w-rand_x), (h-rand_y)) - 1)
             rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
                            (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
             # checks if all corners are part of picture
-            # print (str(w) + ' ' + str(h))
-            # print(rand_points[3])
             for x, y in rand_points:
                 if img.getpixel((x, y)) == (0, 0, 0):
                     rand_points.remove((x, y))
-
+            c += 1
+        # Final Resize
+        ##################
         box = (rand_x, rand_y, rand_x+rand_side, rand_y+rand_side)
-
         img = img.resize(
             (self.img_rows, self.img_cols),
             Image.LANCZOS,
