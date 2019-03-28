@@ -108,6 +108,7 @@ venv.bak/
 /.vscode
 /train
 /bam_train
+select_train_transformations
 csv_image_downloader.py
 *.csv
 *.sqlite
