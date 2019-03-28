@@ -109,7 +109,7 @@ class GAN():
     def train(self, epochs, batch_size=128, save_interval=50):
 
         # Load the dataset
-        X_train = self.load_images(200)
+        X_train = self.load_images()
 
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
         # X_train = np.expand_dims(X_train, axis=3)
@@ -177,67 +177,14 @@ class GAN():
         fig.savefig("images/art_%d.png" % epoch)
         plt.close()
 
-    def load_images(self, epochs):
+    def load_images(self):
         imgs = []
-        for filepath in glob.iglob('./select_train/*.jpg'):
+        for filepath in glob.iglob('./select_train_transformations/*.jpg'):
             print(filepath)
             img = Image.open(filepath) #.convert('L')
-            
-            for _ in range(epochs):
-                new_img = self.transform_image(img)
-                if new_img:
-                    print('.', end='', flush=True)
-                    img_data = list(new_img.getdata())
-                    imgs.append(np.array(img_data).reshape(
-                        self.img_rows, self.img_cols, self.channels))
-                else:
-                    print('x', end='', flush=True)
-            print()
+            img_data = list(img.getdata())
+            imgs.append(np.array(img_data).reshape(self.img_shape))
         return np.array(imgs)
-
-    def transform_image(self, img):
-        # Skew
-        ################
-        w, h = img.size
-        skew = random.random()*2 - 1
-        xshift = abs(skew) * w
-        new_width = w + int(round(xshift))
-        img = img.transform(
-            (new_width, h), Image.AFFINE,
-            (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), Image.BICUBIC)
-        # Rotate
-        ################
-        theta = random.randint(-180, 180)
-        img = img.rotate(theta)
-        # Random Crop
-        #################
-        w, h = img.size
-        rand_points = []
-        c = 0
-        while len(rand_points) < 4:
-            if c >= 20:
-                return None
-            # rand top left corner
-            rand_x, rand_y = random.randint(0, int(w/3)), random.randint(0, int(h/3))
-            # rand side length greater than 150
-            rand_side = random.randint(150, min((w-rand_x), (h-rand_y)) - 1)
-            rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
-                           (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
-            # checks if all corners are part of picture
-            for x, y in rand_points:
-                if img.getpixel((x, y)) == (0, 0, 0):
-                    rand_points.remove((x, y))
-            c += 1
-        # Final Resize
-        ##################
-        box = (rand_x, rand_y, rand_x+rand_side, rand_y+rand_side)
-        img = img.resize(
-            (self.img_rows, self.img_cols),
-            Image.LANCZOS,
-            box)
-        # img.show()
-        
-        return img
 
 if __name__ == '__main__':
     gan = GAN()
