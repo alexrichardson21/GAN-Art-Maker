@@ -115,3 +115,4 @@ csv_image_downloader.py
 *.sqbpro
 samples
 playground.py
+genre-scraper.py
