@@ -13,15 +13,20 @@ import glob
 
 class ImageNormalizer():
     def load_and_transform_images(self, shape=(100, 100, 3), folder='./select_train', epochs=20, save_rate=10):
-        print(glob.glob('%s/*.jpg' % folder))
+
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
+        
+        # Init empty array to allow the the maximum number of transformations
         imgs = np.zeros((epochs * num_imgs, shape[0], shape[1], shape[2]))
+        # Keep track of actual number of images in numpy array
         len_imgs = 0
         
         for filepath in glob.iglob('%s/*.jpg' % folder):
             print(filepath)
             img = Image.open(filepath)  # .convert('L')
+            
             h, w = img.size
+
             if (h > 450 and w > 450):
                 for epoch in range(epochs):
                     new_img = self.transform_image(img, shape)
