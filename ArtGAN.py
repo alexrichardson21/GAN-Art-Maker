@@ -22,7 +22,8 @@ import pandas as pd
 import sqlite3
 import glob
 
-
+from image_normalization import ImageNormalizer
+from wikiart_scraper import WikiartScraper
 class GAN():
     def __init__(self):
         self.img_rows = 300
@@ -72,9 +73,6 @@ class GAN():
         model.add(Dense(1024))
         model.add(LeakyReLU(alpha=0.2))
         model.add(BatchNormalization(momentum=0.8))
-        model.add(Dense(2048))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(BatchNormalization(momentum=0.8))
         model.add(Dense(np.prod(self.img_shape), activation='tanh'))
         model.add(Reshape(self.img_shape))
 
@@ -92,8 +90,6 @@ class GAN():
         model = Sequential()
 
         model.add(Flatten(input_shape=img_shape))
-        model.add(Dense(1024))
-        model.add(LeakyReLU(alpha=0.2))
         model.add(Dense(512))
         model.add(LeakyReLU(alpha=0.2))
         model.add(Dense(256))
@@ -106,13 +102,21 @@ class GAN():
 
         return Model(img, validity)
 
-    def train(self, epochs, batch_size=128, save_interval=50):
-
-        # Load the dataset
-        X_train = self.load_images()
-
+    def train(self, epochs, batch_size=128, save_interval=50, training_dir='./select_train/' , wikiart_scrape_url=None):
+        
+        # Scrape from wikiart profile to output directory if url given
+        if wikiart_scrape_url:
+            ws = WikiartScraper()
+            ws.scrape_art(
+                wikiart_scrape_url, training_dir)
+        
+        # Load from training_dir and normalize dataset
+        im = ImageNormalizer()
+        X_train = im.load_and_transform_images(
+            self.img_shape, training_dir, epochs=250, save_rate=100)
+        
+        # Make pixel values -1 to 1
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
-        # X_train = np.expand_dims(X_train, axis=3)
 
         half_batch = int(batch_size / 2)
 
@@ -177,15 +181,9 @@ class GAN():
         fig.savefig("images/art_%d.png" % epoch)
         plt.close()
 
-    def load_images(self):
-        imgs = []
-        for filepath in glob.iglob('./select_train_transformations/*.jpg'):
-            print(filepath)
-            img = Image.open(filepath) #.convert('L')
-            img_data = list(img.getdata())
-            imgs.append(np.array(img_data).reshape(self.img_shape))
-        return np.array(imgs)
-
 if __name__ == '__main__':
+    
+    wikiart_profile = 'https://www.wikiart.org/en/profile/5c9ba655edc2c9b87424edfe/albums/favourites'
+    
     gan = GAN()
-    gan.train(epochs=20000, batch_size=32, save_interval=100)
+    gan.train(epochs=40000, batch_size=32, save_interval=200, wikiart_scrape_url=wikiart_profile)
