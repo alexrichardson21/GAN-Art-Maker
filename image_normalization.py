@@ -12,6 +12,7 @@ import sqlite3
 import glob
 
 class ImageNormalizer():
+    
     def load_and_transform_images(self, shape=(100, 100, 3), folder='./select_train', epochs=20, save_rate=10):
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
@@ -22,13 +23,17 @@ class ImageNormalizer():
         len_imgs = 0
         
         for filepath in glob.iglob('%s/*.jpg' % folder):
+            
             print(filepath)
             img = Image.open(filepath)  # .convert('L')
             
             h, w = img.size
 
+            # If height or width <450 then don't use image 
             if (h > 450 and w > 450):
+                # Copies and randomly transforms images n times
                 for epoch in range(epochs):
+                    
                     new_img = self.transform_image(img, shape)
                     
                     if new_img:
@@ -42,9 +47,9 @@ class ImageNormalizer():
                     
                     else:
                         print('x', end='', flush=True)
-                
             print() 
         
+        # Returns numpy array of image data without extra zeros at end of array
         return imgs[:len_imgs]
 
     def transform_image(self, img, shape):
