@@ -11,7 +11,7 @@ class WikiartScraper:
     def scrape_art(self, wikiart_profile_url, output_dir):
         
         # Opens webpage with selenium
-        driver = webdriver.Chrome("./chromedriver73")
+        driver = webdriver.Chrome('./chromedriver73win.exe')
         driver.get(wikiart_profile_url)
 
         # Clicks 'LOAD MORE' until all pictures are loaded 
