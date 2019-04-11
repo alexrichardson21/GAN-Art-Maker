@@ -1,14 +1,10 @@
 import matplotlib.pyplot as plt
 import random
-import sys
 import cv2
 import skimage.transform
 from PIL import Image, ImageEnhance
-import math
-import os
 import numpy as np
 import pandas as pd
-import sqlite3
 import glob
 
 class ImageNormalizer():

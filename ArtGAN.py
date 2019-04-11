@@ -9,18 +9,13 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 
 import matplotlib.pyplot as plt
-import random
-import sys
 import cv2
 import skimage.transform
 from PIL import Image
-import math
 
 
 import numpy as np
 import pandas as pd
-import sqlite3
-import glob
 
 from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
@@ -186,4 +181,5 @@ if __name__ == '__main__':
     wikiart_profile = 'https://www.wikiart.org/en/profile/5c9ba655edc2c9b87424edfe/albums/favourites'
     
     gan = GAN()
-    gan.train(epochs=40000, batch_size=32, save_interval=200, wikiart_scrape_url=wikiart_profile)
+    gan.train(
+        epochs=40000, batch_size=32, save_interval=200, wikiart_scrape_url=wikiart_profile)
