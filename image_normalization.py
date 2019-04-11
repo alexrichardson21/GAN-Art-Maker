@@ -84,8 +84,11 @@ class ImageNormalizer():
             
             # checks if all corners are part of picture
             for x, y in rand_points:
-                if img.getpixel((x, y)) == (0, 0, 0):
-                    rand_points.remove((x, y))
+                try:
+                    if img.getpixel((x, y)) == (0, 0, 0):
+                        rand_points.remove((x, y))
+                except:
+                    return None
             c += 1
         
         # Sharpening, Brightness, and Contrast
