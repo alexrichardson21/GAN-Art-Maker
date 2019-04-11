@@ -13,7 +13,6 @@ import cv2
 import skimage.transform
 from PIL import Image
 
-
 import numpy as np
 import pandas as pd
 
@@ -99,6 +98,10 @@ class GAN():
 
     def train(self, epochs, batch_size=128, save_interval=50, training_dir='./select_train/' , wikiart_scrape_url=None):
         
+        # ---------------------
+        #  Preprocessing
+        # ---------------------
+
         # Scrape from wikiart profile to output directory if url given
         if wikiart_scrape_url:
             ws = WikiartScraper()
