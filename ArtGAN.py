@@ -160,7 +160,11 @@ class GAN():
             if epoch % save_interval == 0:
                 self.save_imgs(epoch)
         
-        self.combined.save('art_gan.h5')
+
+        # Save all three models
+        self.discriminator.save('art_gan_discriminator.h5')
+        self.generator.save('art_gan_generator.h5')
+        self.combined.save('art_gan_combined.h5')
 
     def save_imgs(self, epoch):
         r, c = 3, 3
@@ -186,4 +190,4 @@ if __name__ == '__main__':
     
     gan = GAN()
     gan.train(
-        epochs=40000, batch_size=32, training_dir='./testing_paintings', save_interval=200) #, wikiart_scrape_url=wikiart_profile)
+        epochs=40000, batch_size=32, training_dir='./select_train', save_interval=200) #, wikiart_scrape_url=wikiart_profile)
