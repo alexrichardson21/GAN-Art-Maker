@@ -14,41 +14,52 @@ class ImageNormalizer():
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
         # Init empty array to allow the the maximum number of transformations
-        imgs = np.zeros((epochs * num_imgs, shape[0], shape[1], shape[2]))
+        imgs = np.empty((epochs * num_imgs, shape[0], shape[1], shape[2]), dtype=np.dtype(np.uint16))
+        
         # Keep track of actual number of images in numpy array
         len_imgs = 0
         
-        for filepath in glob.iglob('%s/*.jpg' % folder):
+        for i, filepath in enumerate(glob.iglob('%s/*.jpg' % folder)):
             
-            print(filepath)
+            print('Transforming image: %d / %d' % (i+1, num_imgs))
+            print('\t' + filepath)
+            
             img = Image.open(filepath)  # .convert('L')
-            
-            h, w = img.size
 
-            # If height or width <450 then don't use image 
-            if (h > 450 and w > 450):
-                # Copies and randomly transforms images n times
-                for epoch in range(epochs):
+            print('\t Dimensions: ' + str(img.size))
+            
+            # Copies and randomly transforms images n times
+            for epoch in range(epochs):
+                try:
+                    new_img = self.transform_image(img, shape, trials=80)
                     
-                    new_img = self.transform_image(img, shape)
-                    
+                    # If properly transformed and cropped
                     if new_img:
-                        print('.', end='', flush=True)
+                    
+                        # Save if epoch is multiple of save_rate
                         if (epoch % save_rate == 0):
                             new_img.save(filepath.replace(folder, folder + '_transformations').replace('.jpg', '_%d.jpg' % epoch))
-                        img_data = np.array(list(new_img.getdata())).reshape(shape)
-                        imgs[len_imgs] = img_data
+                        
+                        # Save image data into imgs array
+                        img_data = np.array(
+                            list(new_img.getdata()), dtype=np.dtype(np.uint16))
+                        imgs[len_imgs] = img_data.reshape(shape)
                         len_imgs += 1
                         print('.', end='', flush=True)
                     
+                    # If unable to crop 
                     else:
                         print('x', end='', flush=True)
-            print() 
+                except:
+                    # If error
+                    print('e', end='', flush=True)
+            print('\n\n')
         
         # Returns numpy array of image data without extra zeros at end of array
+        print('Training set is size: %d' % len_imgs)
         return imgs[:len_imgs]
 
-    def transform_image(self, img, shape):
+    def transform_image(self, img, shape, trials=20):
         # Skew
         ################
         w, h = img.size
@@ -69,28 +80,38 @@ class ImageNormalizer():
         w, h = img.size
         rand_points = []
         c = 0
-        while len(rand_points) < 4:
-            if c >= 20:
-                return None
-            
-            # rand top left corner
-            rand_x, rand_y = random.randint(
-                0, int(w/3)), random.randint(0, int(h/3))
-            
-            # rand side length greater than 300
-            rand_side = random.randint(300, min((w-rand_x), (h-rand_y)) - 1)
-            rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
-                           (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
-            
-            # checks if all corners are part of picture
-            for x, y in rand_points:
-                try:
-                    if img.getpixel((x, y)) == (0, 0, 0):
-                        rand_points.remove((x, y))
-                except:
-                    return None
-            c += 1
         
+        while c < trials:
+            try: 
+                # rand top left corner
+                rand_x, rand_y = random.randint(
+                    0, int(w/3)), random.randint(0, int(h/3))
+                
+                # rand side length greater than half shape dimensions
+                rand_side = random.randint(min(shape[:2]), min((w-rand_x), (h-rand_y)) - 1)
+                
+                # generates the set of corners for random crop
+                rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),
+                            (rand_x, rand_y+rand_side), (rand_x+rand_side, rand_y+rand_side)]
+                
+                # if all corners are part of image => move on
+                for x, y in rand_points:
+                    if img.getpixel((x, y)) == (0, 0, 0):
+                            rand_points.remove((x, y))
+                if len(rand_points) == 4:
+                    break
+                
+                # Try again
+                c+=1
+            
+            # If exception occurred => try again
+            except:
+                c+=1
+        
+        # If couldn't generate image in number of trials
+        if c >= trials:
+            return None
+       
         # Sharpening, Brightness, and Contrast
         #################
         sharpener = ImageEnhance.Sharpness(img)
@@ -113,7 +134,3 @@ class ImageNormalizer():
         # img.show()
 
         return img
-    
-# if __name__ == '__main__':
-#     im = ImageNormalizer()
-#     im.load_images(shape=(300,300,3), epochs=50)

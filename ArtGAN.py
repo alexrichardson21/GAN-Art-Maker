@@ -96,7 +96,7 @@ class GAN():
 
         return Model(img, validity)
 
-    def train(self, epochs, batch_size=128, save_interval=50, training_dir='./select_train/' , wikiart_scrape_url=None):
+    def train(self, epochs, batch_size=128, save_interval=50, training_dir='./select_train' , wikiart_scrape_url=None):
         
         # ---------------------
         #  Preprocessing
@@ -111,10 +111,10 @@ class GAN():
         # Load from training_dir and normalize dataset
         im = ImageNormalizer()
         X_train = im.load_and_transform_images(
-            self.img_shape, training_dir, epochs=100, save_rate=100)
+            self.img_shape, training_dir, epochs=250, save_rate=40)
         
         # Make pixel values -1 to 1
-        X_train = (X_train.astype(np.float32) - 127.5) / 127.5
+        X_train = (X_train.astype(np.float16) - 127.5) / 127.5
 
         half_batch = int(batch_size / 2)
 
@@ -146,8 +146,7 @@ class GAN():
 
             noise = np.random.normal(0, 1, (batch_size, 100))
 
-            # The generator wants the discriminator to label the generated samples
-            # as valid (ones)
+            # The generator wants the discriminator to label the generated samples as valid (ones)
             valid_y = np.array([1] * batch_size)
 
             # Train the generator
@@ -160,6 +159,8 @@ class GAN():
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
                 self.save_imgs(epoch)
+        
+        self.combined.save('art_gan.h5')
 
     def save_imgs(self, epoch):
         r, c = 3, 3
@@ -185,4 +186,4 @@ if __name__ == '__main__':
     
     gan = GAN()
     gan.train(
-        epochs=40000, batch_size=32, save_interval=200) #, wikiart_scrape_url=wikiart_profile)
+        epochs=40000, batch_size=32, training_dir='./testing_paintings', save_interval=200) #, wikiart_scrape_url=wikiart_profile)
