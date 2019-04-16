@@ -13,8 +13,8 @@ class ImageNormalizer():
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
-        # Init empty array to allow the the maximum number of transformations
-        imgs = np.zeros((epochs * num_imgs, shape[0], shape[1], shape[2]), dtype=np.dtype(np.float16))
+        # Init empty array to hold half of maximum number of images 
+        imgs = np.zeros((epochs * num_imgs // 2, shape[0], shape[1], shape[2]), dtype=np.float16)
         
         # Keep track of actual number of images in numpy array
         len_imgs = 0
@@ -28,34 +28,38 @@ class ImageNormalizer():
 
             print('\t Dimensions: ' + str(img.size))
             
-            # Copies and randomly transforms images n times
-            for epoch in range(epochs):
-                try:
-                    new_img = self.transform_image(img, shape, trials=150)
-                    
-                    # If properly transformed and cropped
-                    if new_img:
-                    
-                        # Save if epoch is multiple of save_rate
-                        if (epoch % save_rate == 0):
-                            new_img.save(filepath.replace(folder, folder + '_transformations').replace('.jpg', '_%d.jpg' % epoch))
+            # If array is full => return
+            while num_imgs < len(imgs):
+                
+                # Copies and randomly transforms images n times
+                for epoch in range(epochs):
+                    try:
+                        # New randomly transformed image
+                        new_img = self.transform_image(img, shape, trials=150)
                         
-                        # Save image data into imgs array
-                        img_data = np.array(
-                            list(new_img.getdata()), dtype=np.dtype(np.uint16))
-                        # Make pixel values -1 to 1
-                        img_data = (img_data.astype(np.float16) - 127.5) / 127.5
-                        imgs[len_imgs] = img_data.reshape(shape)
-                        len_imgs += 1
-                        print('.', end='', flush=True)
-                    
-                    # If unable to crop 
-                    else:
-                        print('x', end='', flush=True)
-                except:
-                    # If error
-                    print('e', end='', flush=True)
-            print('\n\n')
+                        # If properly transformed and cropped
+                        if new_img:
+                        
+                            # Save if epoch is multiple of save_rate
+                            if (epoch % save_rate == 0):
+                                new_img.save(filepath.replace(folder, folder + '_transformations').replace('.jpg', '_%d.jpg' % epoch))
+                            
+                            # Save image data into imgs array
+                            img_data = np.array(
+                                list(new_img.getdata()), dtype=np.dtype(np.uint16))
+                            # Make pixel values -1 to 1
+                            img_data = (img_data.astype(np.float16) - 127.5) / 127.5
+                            imgs[len_imgs] = img_data.reshape(shape)
+                            len_imgs += 1
+                            print('.', end='', flush=True)
+                        
+                        # If unable to crop 
+                        else:
+                            print('x', end='', flush=True)
+                    except:
+                        # If error
+                        print('e', end='', flush=True)
+                print('\n\n')
         
         # Returns numpy array of image data without extra zeros at end of array
         print('Training set is size: %d\n' % len_imgs)
