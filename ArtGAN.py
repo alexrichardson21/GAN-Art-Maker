@@ -111,7 +111,7 @@ class GAN():
         # Load from training_dir and normalize dataset
         im = ImageNormalizer()
         X_train = im.load_and_transform_images(
-            self.img_shape, training_dir, epochs=100, save_rate=20)
+            self.img_shape, training_dir, epochs=150, save_rate=20)
         
         # Make pixel values -1 to 1
         # X_train = (X_train.astype(np.float16) - 127.5) / 127.5
@@ -190,4 +190,5 @@ if __name__ == '__main__':
     
     gan = GAN()
     gan.train(
-        epochs=40000, batch_size=32, training_dir='./select_train', save_interval=200) #, wikiart_scrape_url=wikiart_profile)
+        epochs=40000, batch_size=32, training_dir='./select_train', save_interval=200) 
+        #, wikiart_scrape_url=wikiart_profile)
