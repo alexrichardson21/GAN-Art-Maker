@@ -20,8 +20,8 @@ from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
 class GAN():
     def __init__(self):
-        self.img_rows = 300
-        self.img_cols = 300
+        self.img_rows = 200
+        self.img_cols = 200
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
@@ -111,10 +111,10 @@ class GAN():
         # Load from training_dir and normalize dataset
         im = ImageNormalizer()
         X_train = im.load_and_transform_images(
-            self.img_shape, training_dir, epochs=250, save_rate=40)
+            self.img_shape, training_dir, epochs=100, save_rate=20)
         
         # Make pixel values -1 to 1
-        X_train = (X_train.astype(np.float16) - 127.5) / 127.5
+        # X_train = (X_train.astype(np.float16) - 127.5) / 127.5
 
         half_batch = int(batch_size / 2)
 

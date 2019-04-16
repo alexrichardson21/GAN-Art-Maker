@@ -9,12 +9,12 @@ import glob
 
 class ImageNormalizer():
     
-    def load_and_transform_images(self, shape=(100, 100, 3), folder='./select_train', epochs=20, save_rate=10):
+    def load_and_transform_images(self, shape, folder, epochs=20, save_rate=10):
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
         # Init empty array to allow the the maximum number of transformations
-        imgs = np.empty((epochs * num_imgs, shape[0], shape[1], shape[2]), dtype=np.dtype(np.uint16))
+        imgs = np.zeros((epochs * num_imgs, shape[0], shape[1], shape[2]), dtype=np.dtype(np.float16))
         
         # Keep track of actual number of images in numpy array
         len_imgs = 0
@@ -31,7 +31,7 @@ class ImageNormalizer():
             # Copies and randomly transforms images n times
             for epoch in range(epochs):
                 try:
-                    new_img = self.transform_image(img, shape, trials=80)
+                    new_img = self.transform_image(img, shape, trials=150)
                     
                     # If properly transformed and cropped
                     if new_img:
@@ -43,6 +43,8 @@ class ImageNormalizer():
                         # Save image data into imgs array
                         img_data = np.array(
                             list(new_img.getdata()), dtype=np.dtype(np.uint16))
+                        # Make pixel values -1 to 1
+                        img_data = (img_data.astype(np.float16) - 127.5) / 127.5
                         imgs[len_imgs] = img_data.reshape(shape)
                         len_imgs += 1
                         print('.', end='', flush=True)
@@ -56,10 +58,10 @@ class ImageNormalizer():
             print('\n\n')
         
         # Returns numpy array of image data without extra zeros at end of array
-        print('Training set is size: %d' % len_imgs)
+        print('Training set is size: %d\n' % len_imgs)
         return imgs[:len_imgs]
 
-    def transform_image(self, img, shape, trials=20):
+    def transform_image(self, img, shape, trials=80):
         # Skew
         ################
         w, h = img.size
@@ -108,7 +110,7 @@ class ImageNormalizer():
             except:
                 c+=1
         
-        # If couldn't generate image in number of trials
+        # If couldn't generate image in n trials => return None
         if c >= trials:
             return None
        
