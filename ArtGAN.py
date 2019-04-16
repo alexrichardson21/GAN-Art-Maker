@@ -190,5 +190,5 @@ if __name__ == '__main__':
     
     gan = GAN()
     gan.train(
-        epochs=40000, batch_size=32, training_dir='./select_train', save_interval=200) 
+        epochs=40000, batch_size=64, training_dir='./select_train', save_interval=200) 
         #, wikiart_scrape_url=wikiart_profile)
