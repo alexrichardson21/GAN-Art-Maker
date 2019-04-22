@@ -17,7 +17,6 @@ from PIL import Image
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
@@ -248,7 +247,7 @@ class GAN():
             self.img_shape, 
             training_dir, 
             epochs=100, 
-            save_rate=100,
+            save_rate=1,
         )
         
         # Make pixel values -1 to 1
@@ -329,7 +328,7 @@ if __name__ == '__main__':
     gan = GAN()
     gan.train(
         epochs=40000, 
-        batch_size=64, 
+        batch_size=32, 
         training_dir='./testing_paintings', 
         save_interval=100,
         # wikiart_scrape_url=wikiart_profile,
