@@ -116,7 +116,7 @@ class GAN():
                 filters=160, 
                 kernel_size=k,
                 strides=2, 
-                output_padding=1, 
+                # output_padding=1, 
                 use_bias=False,
             )
         )
@@ -127,12 +127,12 @@ class GAN():
         model.add(
             Conv2DTranspose(
                 filters=self.channels, 
-                kernel_size=k,
+                kernel_size=k+1,
                 strides=2, 
                 use_bias=False,
             )
         )
-        model.add(Cropping2D(((1, 0), (1, 0))))
+        # model.add(Cropping2D(((1, 0), (1, 0))))
         model.add(Activation('tanh'))
 
         model.summary()
