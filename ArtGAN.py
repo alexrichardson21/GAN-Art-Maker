@@ -1,8 +1,8 @@
 from __future__ import print_function, division
 
 from keras.datasets import mnist
-from keras.layers import Input, Dense, Activation, Reshape, Flatten, Dropout
-from keras.layers import MaxPooling2D, GlobalAveragePooling2D, BatchNormalization, Activation, ZeroPadding2D
+from keras.layers import Input, Dense, Activation, Reshape, Flatten, Dropout, Cropping2D
+from keras.layers import MaxPooling2D, GlobalAveragePooling2D,BatchNormalization, Activation, ZeroPadding2D, Lambda
 from keras.activations import relu
 from keras.layers.advanced_activations import LeakyReLU
 
@@ -17,16 +17,17 @@ from PIL import Image
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
 class GAN():
     def __init__(self):
-        self.img_rows = 64
-        self.img_cols = 64
+        self.img_rows = 128
+        self.img_cols = 128
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.noise_shape = (1,1,100)
+        self.noise = 100
 
         optimizer = Adam(0.0002, 0.5)
 
@@ -41,7 +42,7 @@ class GAN():
         self.generator.compile(loss='binary_crossentropy', optimizer=optimizer)
 
         # The generator takes noise as input and generated imgs
-        z = Input(shape=self.noise_shape)
+        z = Input((self.noise,))
         img = self.generator(z)
 
         # For the combined model we will only train the generator
@@ -61,14 +62,13 @@ class GAN():
 
         model = Sequential()
 
-        # Layer 1
+        # First Layer
+        model.add(Reshape((1,1,self.noise), input_shape=(self.noise,)))
         model.add(
             Conv2DTranspose(
-                filters=1024, 
-                kernel_size=k, 
-                strides=1, 
-                use_bias=False, 
-                input_shape=self.noise_shape,
+                filters=2560, 
+                kernel_size=k,
+                use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
@@ -77,39 +77,49 @@ class GAN():
         # Layer 2
         model.add(
             Conv2DTranspose(
-                filters=512, 
+                filters=1280, 
                 kernel_size=k,
                 strides=2, 
                 use_bias=False,
             )
         )
-        # model.add(ZeroPadding2D(padding=((1,0),(1,0))))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
         # Layer 3
         model.add(
             Conv2DTranspose(
-                filters=256, 
+                filters=640, 
                 kernel_size=k,
                 strides=2, 
                 use_bias=False,
             )
         )
-        # model.add(ZeroPadding2D(padding=((1,0),(1,0))))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
         # Layer 4
         model.add(
             Conv2DTranspose(
-                filters=128, 
+                filters=320, 
                 kernel_size=k,
                 strides=2, 
                 use_bias=False,
             )
         )
-        # model.add(ZeroPadding2D(padding=((1,0),(1,0))))
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(Activation('relu'))
+
+        # Layer 5
+        model.add(
+            Conv2DTranspose(
+                filters=160, 
+                kernel_size=k,
+                strides=2, 
+                output_padding=1, 
+                use_bias=False,
+            )
+        )
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
@@ -119,17 +129,15 @@ class GAN():
                 filters=self.channels, 
                 kernel_size=k,
                 strides=2, 
-                output_padding=(1,1), 
-                use_bias=False
+                use_bias=False,
             )
         )
-        # model.add(ZeroPadding2D(padding=((1, 0), (1, 0))))
+        model.add(Cropping2D(((1, 0), (1, 0))))
         model.add(Activation('tanh'))
-        model.add(Reshape(self.img_shape))
 
         model.summary()
 
-        noise = Input(shape=self.noise_shape)
+        noise = Input(shape=(self.noise,))
         img = model(noise)
 
         return Model(noise, img)
@@ -144,54 +152,74 @@ class GAN():
         # First Layer
         model.add(
             Conv2D(
-                filters=128, 
+                filters=40, 
                 kernel_size=k,
                 strides=2, 
                 input_shape=img_shape
             )
         )
-        model.add(ZeroPadding2D(padding=((1,0),(1,0))))
+        model.add(ZeroPadding2D(padding=1))
         model.add(LeakyReLU(alpha=0.2))
 
         # Layer 2
         model.add(
             Conv2D(
-                filters=256, 
+                filters=80, 
                 kernel_size=k, 
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=((1,0),(1,0))))
+        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
         # Layer 3
         model.add(
             Conv2D(
-                filters=512, 
+                filters=160, 
                 kernel_size=k, 
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=((1,0),(1,0))))
+        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
         # Layer 4
         model.add(
             Conv2D(
-                filters=1024, 
+                filters=320, 
                 kernel_size=k, 
                 strides=2
             )
         )
-        # model.add(ZeroPadding2D(padding=((1,0),(1,0))))
+        model.add(ZeroPadding2D(padding=1))
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+        # Layer 5
+        model.add(
+            Conv2D(
+                filters=640, 
+                kernel_size=k, 
+                strides=2
+            )
+        )
+        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
         # Final Layer
-        model.add(Dropout(0.4))
-        model.add(Dense(1, activation='sigmoid'))
+        model.add(Dropout(0.3))
+        model.add(
+            Conv2D(
+                filters=1,
+                kernel_size=k+1,
+                activation='sigmoid',
+            )
+        )
+        model.add(Reshape((1,)))
+        
+        # model.add(Dense(1, activation='sigmoid'))
         
         model.summary()
 
@@ -219,7 +247,7 @@ class GAN():
         X_train = im.load_and_transform_images(
             self.img_shape, 
             training_dir, 
-            epochs=1000, 
+            epochs=100, 
             save_rate=100,
         )
         
@@ -237,8 +265,8 @@ class GAN():
             # Select a random half batch of images
             idx = np.random.randint(0, X_train.shape[0], half_batch)
             imgs = X_train[idx]
-
-            noise = np.random.normal(0, 1, (half_batch, self.noise_shape[0], self.noise_shape[1], self.noise_shape[2]))
+            
+            noise = np.random.normal(0, 1, (half_batch, self.noise))
 
             # Generate a half batch of new images
             gen_imgs = self.generator.predict(noise)
@@ -254,10 +282,10 @@ class GAN():
             #  Train Generator
             # ---------------------
 
-            noise = np.random.normal(0, 1, (batch_size, 100))
+            noise = np.random.normal(0, 1, (batch_size, self.noise))
 
             # The generator wants the discriminator to label the generated samples as valid (ones)
-            valid_y = np.array([1] * batch_size)
+            valid_y = np.ones((batch_size, 1))
 
             # Train the generator
             g_loss = self.combined.train_on_batch(noise, valid_y)
@@ -278,7 +306,7 @@ class GAN():
 
     def save_imgs(self, epoch):
         r, c = 3, 3
-        noise = np.random.normal(0, 1, (r * c, 100))
+        noise = np.random.normal(0, 1, (r * c, self.noise))
         gen_imgs = self.generator.predict(noise)
 
         # Rescale images 0 - 1
