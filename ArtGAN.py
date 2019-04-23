@@ -157,8 +157,8 @@ class GAN():
                 input_shape=img_shape
             )
         )
-        model.add(ZeroPadding2D(padding=1))
         model.add(LeakyReLU(alpha=0.2))
+        model.add(ZeroPadding2D(padding=1))
 
         # Layer 2
         model.add(
@@ -168,9 +168,9 @@ class GAN():
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
+        model.add(ZeroPadding2D(padding=1))
 
         # Layer 3
         model.add(
@@ -180,9 +180,9 @@ class GAN():
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
+        model.add(ZeroPadding2D(padding=1))
 
         # Layer 4
         model.add(
@@ -192,9 +192,9 @@ class GAN():
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
+        model.add(ZeroPadding2D(padding=1))
         # Layer 5
         model.add(
             Conv2D(
@@ -203,7 +203,6 @@ class GAN():
                 strides=2
             )
         )
-        model.add(ZeroPadding2D(padding=1))
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
@@ -212,7 +211,7 @@ class GAN():
         model.add(
             Conv2D(
                 filters=1,
-                kernel_size=k+1,
+                kernel_size=k-1,
                 activation='sigmoid',
             )
         )
