@@ -9,7 +9,27 @@ import glob
 
 class ImageNormalizer():
     
-    def load_and_transform_images(self, shape, folder, epochs=20, save_rate=10):
+    def load_images(self, shape, folder):
+        num_imgs = len(glob.glob('%s/*.jpg' % folder))
+
+        # Init empty array to hold half of maximum number of images
+        imgs = np.zeros(
+            (num_imgs, shape[0], shape[1], shape[2]), dtype=np.float16
+        )
+        
+        for i, filepath in enumerate(glob.iglob('%s/*.jpg' % folder)):
+
+            img = Image.open(filepath)
+            img_data = np.array(
+                list(img.getdata()), dtype=np.dtype(np.uint16)
+            )
+            # Make pixel values -1 to 1
+            img_data = (img_data.astype(np.float16) - 127.5) / 127.5
+            imgs[i] = img_data.reshape(shape)
+        
+        return imgs
+
+    def load_and_transform_images(self, shape, folder, epochs=50, save_rate=10):
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
@@ -35,20 +55,24 @@ class ImageNormalizer():
                 
                 try:
                     # New randomly transformed image
-                    new_img = self.transform_image(img, shape, trials=150)
+                    new_img = self.transform_image(img, shape, trials=80)
                     
                     # If properly transformed and cropped
                     if new_img:
                     
                         # Save if epoch is multiple of save_rate
                         if (epoch % save_rate == 0):
-                            new_img.save(filepath.replace(folder, folder + '_transformations').replace('.jpg', '_%d.jpg' % epoch))
+                            new_img.save(
+                                filepath.replace(folder, folder + '_transformations').replace('.jpg', '_%d.jpg' % epoch)
+                            )
                         
                         # Save image data into imgs array
                         img_data = np.array(
-                            list(new_img.getdata()), dtype=np.dtype(np.uint16))
+                            list(new_img.getdata()), dtype=np.dtype(np.uint16)
+                        )
                         # Make pixel values -1 to 1
                         img_data = (img_data.astype(np.float16) - 127.5) / 127.5
+                        # Add img data to imgs array
                         imgs[len_imgs] = img_data.reshape(shape)
                         len_imgs += 1
                         print('.', end='', flush=True)
@@ -75,8 +99,11 @@ class ImageNormalizer():
         xshift = abs(skew) * w
         new_width = w + int(round(xshift))
         img = img.transform(
-            (new_width, h), Image.AFFINE,
-            (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), Image.BICUBIC)
+            (new_width, h), 
+            Image.AFFINE,
+            (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), 
+            Image.BICUBIC
+        )
         
         # Rotate
         ################
@@ -93,10 +120,13 @@ class ImageNormalizer():
             try: 
                 # rand top left corner
                 rand_x, rand_y = random.randint(
-                    0, int(w/3)), random.randint(0, int(h/3))
+                    0, int(w/3)), random.randint(0, int(h/3)
+                )
                 
                 # rand side length greater than half shape dimensions
-                rand_side = random.randint(min(shape[:2]), min((w-rand_x), (h-rand_y)) - 1)
+                rand_side = random.randint(
+                    min(shape[:2]), min((w-rand_x), (h-rand_y)) - 1
+                )
                 
                 # generates the set of corners for random crop
                 rand_points = [(rand_x, rand_y), (rand_x+rand_side, rand_y),

@@ -1,22 +1,16 @@
 from __future__ import print_function, division
 
-from keras.datasets import mnist
-from keras.layers import Input, Dense, Activation, Reshape, Flatten, Dropout, Cropping2D
-from keras.layers import MaxPooling2D, GlobalAveragePooling2D,BatchNormalization, Activation, ZeroPadding2D, Lambda
+from keras.layers import Input, Dense, Activation, Reshape, Flatten, SpatialDropout2D, Cropping2D
+from keras.layers import MaxPooling2D, BatchNormalization, Activation, ZeroPadding2D
 from keras.activations import relu
 from keras.layers.advanced_activations import LeakyReLU
-
-from keras.layers.convolutional import UpSampling2D, Conv2D, Conv2DTranspose
+from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 
 import matplotlib.pyplot as plt
-import cv2
-import skimage.transform
-from PIL import Image
 
 import numpy as np
-import pandas as pd
 
 from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
@@ -62,7 +56,7 @@ class GAN():
         model = Sequential()
 
         # First Layer
-        model.add(Reshape((1,1,self.noise), input_shape=(self.noise,)))
+        model.add(Reshape((1, 1, self.noise), input_shape=(self.noise,)))
         model.add(
             Conv2DTranspose(
                 filters=2560, 
@@ -143,7 +137,6 @@ class GAN():
 
     def build_discriminator(self):
 
-        img_shape = (self.img_rows, self.img_cols, self.channels)
         k = 4
 
         model = Sequential()
@@ -154,7 +147,8 @@ class GAN():
                 filters=40, 
                 kernel_size=k,
                 strides=2, 
-                input_shape=img_shape
+                use_bias=False,
+                input_shape=self.img_shape,
             )
         )
         model.add(LeakyReLU(alpha=0.2))
@@ -165,7 +159,8 @@ class GAN():
             Conv2D(
                 filters=80, 
                 kernel_size=k, 
-                strides=2
+                strides=2,
+                use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
@@ -177,7 +172,8 @@ class GAN():
             Conv2D(
                 filters=160, 
                 kernel_size=k, 
-                strides=2
+                strides=2,
+                use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
@@ -189,7 +185,8 @@ class GAN():
             Conv2D(
                 filters=320, 
                 kernel_size=k, 
-                strides=2
+                strides=2,
+                use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
@@ -200,18 +197,20 @@ class GAN():
             Conv2D(
                 filters=640, 
                 kernel_size=k, 
-                strides=2
+                strides=2,
+                use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
         # Final Layer
-        model.add(Dropout(0.3))
+        model.add(SpatialDropout2D(0.4))
         model.add(
             Conv2D(
                 filters=1,
                 kernel_size=k-1,
+                use_bias=False,
                 activation='sigmoid',
             )
         )
@@ -221,12 +220,12 @@ class GAN():
         
         model.summary()
 
-        img = Input(shape=img_shape)
+        img = Input(shape=self.img_shape)
         validity = model(img)
 
         return Model(img, validity)
 
-    def train(self, epochs, batch_size=128, save_interval=50, training_dir='./select_train' , wikiart_scrape_url=None):
+    def train(self, training_dir, epochs, batch_size=32, save_interval=100, transform=False, wikiart_scrape_url=None):
         
         # ---------------------
         #  Preprocessing
@@ -242,15 +241,18 @@ class GAN():
         
         # Load from training_dir and normalize dataset
         im = ImageNormalizer()
-        X_train = im.load_and_transform_images(
-            self.img_shape, 
-            training_dir, 
-            epochs=100, 
-            save_rate=1,
-        )
-        
-        # Make pixel values -1 to 1
-        # X_train = (X_train.astype(np.float16) - 127.5) / 127.5
+        if transform:
+            X_train = im.load_and_transform_images(
+                self.img_shape, 
+                training_dir, 
+                epochs=80, 
+                save_rate=1,
+            )
+        else:
+            X_train = im.load_images(
+                self.img_shape,
+                training_dir,
+            )
 
         half_batch = int(batch_size / 2)
 
@@ -326,10 +328,7 @@ if __name__ == '__main__':
     
     gan = GAN()
     gan.train(
-        epochs=40000, 
-        batch_size=32, 
-        training_dir='./testing_paintings', 
-        save_interval=100,
-        # wikiart_scrape_url=wikiart_profile,
+        training_dir='./select_train_transformations',
+        epochs=40000,
     ) 
         
