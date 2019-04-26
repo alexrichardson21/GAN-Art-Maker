@@ -16,18 +16,22 @@ class ImageNormalizer():
         imgs = np.zeros(
             (num_imgs, shape[0], shape[1], shape[2]), dtype=np.float16
         )
+        x, y, _ = shape
+        len_imgs = 0
         
-        for i, filepath in enumerate(glob.iglob('%s/*.jpg' % folder)):
+        for filepath in glob.iglob('%s/*.jpg' % folder):
 
             img = Image.open(filepath)
-            img_data = np.array(
-                list(img.getdata()), dtype=np.dtype(np.uint16)
-            )
-            # Make pixel values -1 to 1
-            img_data = (img_data.astype(np.float16) - 127.5) / 127.5
-            imgs[i] = img_data.reshape(shape)
+            if img.size == (x, y):
+                img_data = np.array(
+                    list(img.getdata()), dtype=np.dtype(np.uint16)
+                )
+                # Make pixel values -1 to 1
+                img_data = (img_data.astype(np.float16) - 127.5) / 127.5
+                imgs[len_imgs] = img_data.reshape(shape)
+                len_imgs += 1
         
-        return imgs
+        return imgs[:len_imgs]
 
     def load_and_transform_images(self, shape, folder, epochs=50, save_rate=10):
 

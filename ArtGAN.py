@@ -51,81 +51,68 @@ class GAN():
 
     def build_generator(self):
 
-        k = 3
+        k = 5
+        s = 2
 
         model = Sequential()
 
         # First Layer
-        model.add(Reshape((1, 1, self.noise), input_shape=(self.noise,)))
-        model.add(
-            Conv2DTranspose(
-                filters=2560, 
-                kernel_size=k,
-                use_bias=False,
-            )
-        )
+        model.add(Dense(4 * 4 * 1024, input_shape=(self.noise,)))
+        model.add(Reshape(target_shape=(4, 4, 1024)))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
-        # Layer 2
-        model.add(
-            Conv2DTranspose(
-                filters=1280, 
-                kernel_size=k,
-                strides=2, 
-                use_bias=False,
-            )
-        )
+        model.add(Conv2DTranspose(
+            filters=512,      
+            kernel_size=k,
+            strides=s, 
+            padding='same',
+            use_bias=False,
+        ))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
-        # Layer 3
-        model.add(
-            Conv2DTranspose(
-                filters=640, 
-                kernel_size=k,
-                strides=2, 
-                use_bias=False,
-            )
-        )
+        model.add(Conv2DTranspose(
+            filters=256,
+            kernel_size=k,
+            strides=s,
+            padding='same',
+            use_bias=False,
+        ))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
-        # Layer 4
-        model.add(
-            Conv2DTranspose(
-                filters=320, 
-                kernel_size=k,
-                strides=2, 
-                use_bias=False,
-            )
-        )
+        model.add(Conv2DTranspose(
+            filters=128,
+            kernel_size=k,
+            strides=s,
+            padding='same',
+            use_bias=False,
+        ))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
-        # Layer 5
-        model.add(
-            Conv2DTranspose(
-                filters=160, 
-                kernel_size=k,
-                strides=2, 
-                # output_padding=1, 
-                use_bias=False,
-            )
-        )
+        model.add(Conv2DTranspose(
+            filters=64,
+            kernel_size=k,
+            strides=s,
+            padding='same',
+            use_bias=False,
+        ))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
+        
 
         # Output Layer
         model.add(
             Conv2DTranspose(
                 filters=self.channels, 
-                kernel_size=k+1,
-                strides=2, 
+                kernel_size=k,
+                strides=s,
+                padding='same',
                 use_bias=False,
             )
         )
-        # model.add(Cropping2D(((1, 0), (1, 0))))
         model.add(Activation('tanh'))
 
         model.summary()
@@ -138,85 +125,74 @@ class GAN():
     def build_discriminator(self):
 
         k = 4
-
+        s = 2
         model = Sequential()
         
         # First Layer
         model.add(
             Conv2D(
-                filters=40, 
+                filters=64//2, 
                 kernel_size=k,
-                strides=2, 
+                strides=s, 
+                padding='same',
                 use_bias=False,
                 input_shape=self.img_shape,
             )
         )
         model.add(LeakyReLU(alpha=0.2))
-        model.add(ZeroPadding2D(padding=1))
 
-        # Layer 2
         model.add(
             Conv2D(
-                filters=80, 
-                kernel_size=k, 
-                strides=2,
-                use_bias=False,
-            )
-        )
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(ZeroPadding2D(padding=1))
-
-        # Layer 3
-        model.add(
-            Conv2D(
-                filters=160, 
-                kernel_size=k, 
-                strides=2,
-                use_bias=False,
-            )
-        )
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(ZeroPadding2D(padding=1))
-
-        # Layer 4
-        model.add(
-            Conv2D(
-                filters=320, 
-                kernel_size=k, 
-                strides=2,
-                use_bias=False,
-            )
-        )
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(ZeroPadding2D(padding=1))
-        # Layer 5
-        model.add(
-            Conv2D(
-                filters=640, 
-                kernel_size=k, 
-                strides=2,
+                filters=128//2,
+                kernel_size=k,
+                strides=s,
+                padding='same',
                 use_bias=False,
             )
         )
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
-        # Final Layer
-        model.add(SpatialDropout2D(0.4))
         model.add(
             Conv2D(
-                filters=1,
-                kernel_size=k-1,
+                filters=256//2,
+                kernel_size=k,
+                strides=s,
+                padding='same',
                 use_bias=False,
-                activation='sigmoid',
             )
         )
-        model.add(Reshape((1,)))
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+
+        model.add(
+            Conv2D(
+                filters=512//2,
+                kernel_size=k,
+                strides=s,
+                padding='same',
+                use_bias=False,
+            )
+        )
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+
+        model.add(
+            Conv2D(
+                filters=1024//2,
+                kernel_size=k,
+                strides=s,
+                padding='same',
+                use_bias=False,
+            )
+        )
+        model.add(BatchNormalization(momentum=0.8))
+        model.add(LeakyReLU(alpha=0.2))
+
         
-        # model.add(Dense(1, activation='sigmoid'))
+        # Final Layer
+        model.add(Flatten())
+        model.add(Dense(1, activation='sigmoid'))
         
         model.summary()
 
@@ -330,5 +306,6 @@ if __name__ == '__main__':
     gan.train(
         training_dir='./select_train_transformations',
         epochs=40000,
+        # transform=True,
     ) 
         
