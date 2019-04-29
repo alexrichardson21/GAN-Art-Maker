@@ -231,7 +231,7 @@ class GAN():
             X_train = im.load_and_transform_images(
                 self.img_shape,
                 training_dir,
-                epochs=80,
+                epochs=40,
                 save_rate=1,
             )
         else:
