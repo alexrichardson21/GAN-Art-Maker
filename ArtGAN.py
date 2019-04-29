@@ -1,7 +1,6 @@
 from __future__ import print_function, division
 
-from keras.layers import Input, Dense, Activation, Reshape, Flatten, SpatialDropout2D, Cropping2D
-from keras.layers import MaxPooling2D, BatchNormalization, Activation, ZeroPadding2D
+from keras.layers import Input, Dense, Activation, Reshape, Flatten, Dropout, BatchNormalization
 from keras.activations import relu
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
@@ -11,6 +10,8 @@ from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
 import numpy as np
+
+import argparse
 
 from image_normalization import ImageNormalizer
 from wikiart_scraper import WikiartScraper
@@ -62,6 +63,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
+        # Layer 2
         model.add(Conv2DTranspose(
             filters=512,      
             kernel_size=k,
@@ -72,6 +74,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
+        # Layer 3
         model.add(Conv2DTranspose(
             filters=256,
             kernel_size=k,
@@ -82,6 +85,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
+        # Layer 4
         model.add(Conv2DTranspose(
             filters=128,
             kernel_size=k,
@@ -92,6 +96,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
 
+        # Layer 5
         model.add(Conv2DTranspose(
             filters=64,
             kernel_size=k,
@@ -102,7 +107,6 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation('relu'))
         
-
         # Output Layer
         model.add(
             Conv2DTranspose(
@@ -126,6 +130,7 @@ class GAN():
 
         k = 4
         s = 2
+
         model = Sequential()
         
         # First Layer
@@ -141,6 +146,7 @@ class GAN():
         )
         model.add(LeakyReLU(alpha=0.2))
 
+        # Layer 2
         model.add(
             Conv2D(
                 filters=128//2,
@@ -152,7 +158,8 @@ class GAN():
         )
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
-
+        
+        # Layer 3
         model.add(
             Conv2D(
                 filters=256//2,
@@ -165,6 +172,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
+        # Layer 4
         model.add(
             Conv2D(
                 filters=512//2,
@@ -177,6 +185,7 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
+        # Layer 5
         model.add(
             Conv2D(
                 filters=1024//2,
@@ -189,9 +198,9 @@ class GAN():
         model.add(BatchNormalization(momentum=0.8))
         model.add(LeakyReLU(alpha=0.2))
 
-        
         # Final Layer
         model.add(Flatten())
+        model.add(Dropout(.3))
         model.add(Dense(1, activation='sigmoid'))
         
         model.summary()
@@ -201,7 +210,7 @@ class GAN():
 
         return Model(img, validity)
 
-    def train(self, training_dir, epochs, batch_size=32, save_interval=100, transform=False, wikiart_scrape_url=None):
+    def train(self, training_dir, epochs, batch_size=32, save_interval=100, transform=0, wikiart_scrape_url=None):
         
         # ---------------------
         #  Preprocessing
@@ -229,7 +238,7 @@ class GAN():
                 self.img_shape,
                 training_dir,
             )
-
+        
         half_batch = int(batch_size / 2)
 
         for epoch in range(epochs):
@@ -298,14 +307,35 @@ class GAN():
         fig.savefig("images/art_%d.png" % epoch)
         plt.close()
 
+def parse_command_line_args():
+    parser = argparse.ArgumentParser(description='AI Generated Art Bitch')
+    parser.add_argument('epochs', type=int,
+                        help='number of epochs')
+    parser.add_argument('training_dir', type=str,
+                        help='filepath of training set (if wikiart url is given then filepath becomes the save dir)')
+    parser.add_argument('-b', '--batchsize',
+                        default=32, type=int, help='size of batches per epoch')
+    parser.add_argument('-s', '--saveinterval',
+                        type=int, default=100, help='interval to save sample images')
+    parser.add_argument('-w', '--wikiart', type=str, default=None,
+                        help='url of wikiart profile to dowload from')
+    parser.add_argument('-t', '--transform', type=int, default=0,
+                        help='number of transformations applied to each picture (default: no transformation)')
+    return vars(parser.parse_args())
+        # print(args)
+
 if __name__ == '__main__':
-    
+
     wikiart_profile = 'https://www.wikiart.org/en/profile/5c9ba655edc2c9b87424edfe/albums/favourites'
     
+    args = parse_command_line_args()
     gan = GAN()
     gan.train(
-        training_dir='./select_train_transformations',
-        epochs=40000,
-        # transform=True,
+        training_dir=args['training_dir'],
+        epochs=args['epochs'],
+        transform=args['transform'],
+        batch_size=args['batchsize'],
+        save_interval=args['saveinterval'],
+        wikiart_scrape_url=args['wikiart'],
     ) 
         
