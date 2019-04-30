@@ -106,16 +106,16 @@ class ImageNormalizer():
     def transform_image(self, img, shape, trials=80):
         # Skew
         ################
-        w, h = img.size
-        skew = random.random()*2 - 1
-        xshift = abs(skew) * w
-        new_width = w + int(round(xshift))
-        img = img.transform(
-            (new_width, h), 
-            Image.AFFINE,
-            (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), 
-            Image.BICUBIC
-        )
+        # w, h = img.size
+        # skew = random.random()*2 - 1
+        # xshift = abs(skew) * w
+        # new_width = w + int(round(xshift))
+        # img = img.transform(
+        #     (new_width, h), 
+        #     Image.AFFINE,
+        #     (1, skew, -xshift if skew > 0 else 0, 0, 1, 0), 
+        #     Image.BICUBIC
+        # )
         
         # Rotate
         ################
