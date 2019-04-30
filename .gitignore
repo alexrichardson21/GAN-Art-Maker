@@ -115,6 +115,7 @@ csv_image_downloader.py
 *.csv
 *.sqlite
 *.sqbpro
+*.h5
 samples
 playground.py
 genre-scraper.py
