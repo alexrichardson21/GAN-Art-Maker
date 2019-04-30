@@ -20,13 +20,12 @@ class ImageNormalizer():
         imgs = np.zeros(
             (num_imgs, shape[0], shape[1], shape[2]), dtype=np.float16
         )
-        x, y, _ = shape
         len_imgs = 0
         
         for filepath in glob.iglob('%s/*.jpg' % folder):
 
             img = Image.open(filepath)
-            if img.size == (x, y):
+            try:
                 img_data = np.array(
                     list(img.getdata()), dtype=np.dtype(np.uint16)
                 )
@@ -34,6 +33,8 @@ class ImageNormalizer():
                 img_data = (img_data.astype(np.float16) - 127.5) / 127.5
                 imgs[len_imgs] = img_data.reshape(shape)
                 len_imgs += 1
+            except:
+                print(filepath + ' is the wrong size')
         
         return imgs[:len_imgs]
 
@@ -41,15 +42,16 @@ class ImageNormalizer():
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
-        # Init empty array to hold half of maximum number of images 
-        imgs = np.zeros((epochs * num_imgs // 2, shape[0], shape[1], shape[2]), dtype=np.float16)
+        # Init empty array to hold n% of maximum number of images 
+        n = .8
+        imgs = np.zeros((int(epochs * num_imgs * n), shape[0], shape[1], shape[2]), dtype=np.float16)
         
         # Keep track of actual number of images in numpy array
         len_imgs = 0
 
         # Deletes the old transformations folder and makes new empty folder
-        shutil.rmtree(os.getcwd() + folder + '_transformations')
-        os.mkdir(os.getcwd() + folder + '_transformations')
+        shutil.rmtree(folder + '_transformations')
+        os.mkdir(folder + '_transformations')
         
         for i, filepath in enumerate(glob.iglob('%s/*.jpg' % folder)):
             
@@ -67,7 +69,7 @@ class ImageNormalizer():
                 
                 try:
                     # New randomly transformed image
-                    new_img = self.transform_image(img, shape, trials=80)
+                    new_img = self.transform_image(img, shape)
                     
                     # If properly transformed and cropped
                     if new_img:
@@ -103,7 +105,7 @@ class ImageNormalizer():
         print('Training set is size: %d\n' % len_imgs)
         return imgs[:len_imgs]
 
-    def transform_image(self, img, shape, trials=80):
+    def transform_image(self, img, shape, trials=20):
         # Skew
         ################
         # w, h = img.size
