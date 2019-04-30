@@ -1,5 +1,7 @@
 import glob
+import os
 import random
+import shutil
 
 import cv2
 import matplotlib.pyplot as plt
@@ -35,7 +37,7 @@ class ImageNormalizer():
         
         return imgs[:len_imgs]
 
-    def load_and_transform_images(self, shape, folder, epochs=50, save_rate=10):
+    def load_and_transform_images(self, shape, folder, epochs=50, save_rate=1):
 
         num_imgs = len(glob.glob('%s/*.jpg' % folder))
         
@@ -44,6 +46,10 @@ class ImageNormalizer():
         
         # Keep track of actual number of images in numpy array
         len_imgs = 0
+
+        # Deletes the old transformations folder and makes new empty folder
+        shutil.rmtree(os.getcwd() + folder + '_transformations')
+        os.mkdir(os.getcwd() + folder + '_transformations')
         
         for i, filepath in enumerate(glob.iglob('%s/*.jpg' % folder)):
             

@@ -22,7 +22,7 @@ class GAN():
         self.img_cols = 128
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.noise = 100
+        self.noise = 200
 
         optimizer = Adam(0.0002, 0.5)
 
@@ -231,7 +231,7 @@ class GAN():
             X_train = im.load_and_transform_images(
                 self.img_shape,
                 training_dir,
-                epochs=40,
+                epochs=transform,
                 save_rate=1,
             )
         else:
