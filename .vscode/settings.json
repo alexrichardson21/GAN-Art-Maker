@@ -1,4 +1,4 @@
 {
     "python.linting.pylintEnabled": true,
-    "python.pythonPath": "/Users/Alex/anaconda3/envs/artgan/bin/python"
+    "python.pythonPath": "/usr/local/bin/python3"
 }

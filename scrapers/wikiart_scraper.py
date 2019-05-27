@@ -15,9 +15,9 @@ class WikiartScraper:
 
         # Try opening webpage with selenium in Windows or Mac
         try:
-            driver = webdriver.Chrome('./chromedriver73win.exe')
+            driver = webdriver.Chrome('./chromedrivers/chromedriver73win.exe')
         except:
-            driver = webdriver.Chrome('./chromedriver74')
+            driver = webdriver.Chrome('./chromedrivers/chromedriver74')
         
         if style:
             style = style.replace(' ', '-').lower()
@@ -58,12 +58,12 @@ class WikiartScraper:
             shutil.rmtree(output_dir)
             os.mkdir(output_dir)
 
-        print('Downloading %d images ...' % len(painting_pages))
+        print('Downloading %d images from wikiart ...' % len(painting_pages))
         self.download_largest_images(painting_pages, output_dir)
     
     def download_largest_images(self, painting_pages, output_dir):
-        # Make new folder
-        os.mkdir(output_dir)
+        # # Make new folder
+        # os.mkdir(output_dir)
 
         for i, page in enumerate(painting_pages):
             print('Painting: %d / %d' % (i + 1, len(painting_pages)))

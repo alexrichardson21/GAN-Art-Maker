@@ -1,24 +1,24 @@
 from __future__ import division, print_function
 
-import datetime
-
 import argparse
+import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+from image_god import ImageGod
 from keras.activations import relu
 from keras.initializers import RandomNormal
-from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
-from keras.layers import (Activation, Dense, Dropout,
-                          Flatten, Input, Reshape)
+from keras.layers import Activation, Dense, Dropout, Flatten, Input, Reshape
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.models import Model, Sequential
 from keras.optimizers import Adam
-
-from image_god import ImageGod
-from scrapers.wikiart_scraper import WikiartScraper
+from keras_contrib.layers.normalization.instancenormalization import \
+    InstanceNormalization
 from scrapers.pexel_downloader import PexelDownloader
+from scrapers.wikiart_scraper import WikiartScraper
 
 
 class CycleGAN():
@@ -27,12 +27,14 @@ class CycleGAN():
         self.img_cols = 128
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
+        
+        self.ngf = 64
+        self.ndf = 32
+        
         # Loss weights
         self.lambda_cycle = 10.0                    # Cycle-consistency loss
         self.lambda_id = 0.1 * self.lambda_cycle    # Identity loss
 
-        patch = int(self.img_rows / 2**4)
-        self.disc_patch = (patch, patch, 1)
 
         optimizer = Adam(0.0002, 0.5)
 
@@ -40,16 +42,16 @@ class CycleGAN():
         self.dis_A = self.build_discriminator()
         self.dis_B = self.build_discriminator()
         self.dis_A.compile(loss='mse',
-                         optimizer=optimizer,
-                         metrics=['accuracy'])
+                           optimizer=optimizer,
+                           metrics=['accuracy'])
         self.dis_B.compile(loss='mse',
-                         optimizer=optimizer,
-                         metrics=['accuracy'])
+                           optimizer=optimizer,
+                           metrics=['accuracy'])
 
-        #-------------------------
+        # -------------------------
         # Construct Computational
         #   Graph of Generators
-        #-------------------------
+        # -------------------------
 
         # Build the generators
         self.gen_AtoB = self.build_generator()
@@ -89,7 +91,7 @@ class CycleGAN():
                                             self.lambda_cycle, self.lambda_cycle,
                                             self.lambda_id, self.lambda_id],
                               optimizer=optimizer)
-        
+
     def build_generator(self):
 
         k = 5
@@ -108,94 +110,131 @@ class CycleGAN():
 
         model.add(
             Conv2D(
-                filters=64,
+                filters=self.ngf,
                 kernel_size=k,
                 strides=s,
                 padding='same',
                 use_bias=False,
-                kernel_initializer = conv_init,
+                kernel_initializer=conv_init,
                 input_shape=self.img_shape,
             )
         )
-        model.add(LeakyReLU(alpha=0.2))
+        model.add(InstanceNormalization(
+            gamma_initializer=gamma_init,
+        )
+        )
+        model.add(Activation('relu'))
 
         model.add(
             Conv2D(
-                filters=128,
+                filters=self.ngf*2,
                 kernel_size=k,
                 strides=s,
                 padding='same',
                 use_bias=False,
-                kernel_initializer = conv_init, 
+                kernel_initializer=conv_init,
             )
         )
         model.add(InstanceNormalization(
-                gamma_initializer=gamma_init,
-            )
+            gamma_initializer=gamma_init,
         )
-        model.add(LeakyReLU(alpha=0.2))
+        )
+        model.add(Activation('relu'))
 
         model.add(
             Conv2D(
-                filters=256,
+                filters=self.ngf*4,
                 kernel_size=k,
                 strides=s,
                 padding='same',
                 use_bias=False,
-                kernel_initializer = conv_init, 
+                kernel_initializer=conv_init,
             )
         )
         model.add(InstanceNormalization(
-                
-                gamma_initializer=gamma_init,
-            )
+
+            gamma_initializer=gamma_init,
         )
-        model.add(LeakyReLU(alpha=0.2))
+        )
+        model.add(Activation('relu'))
+
+        
+        #########################
+        # TRANSITION LAYERS
+        #########################
 
         model.add(
             Conv2D(
-                filters=512,
+                filters=self.ngf*4,
                 kernel_size=k,
-                strides=s,
+                strides=1,
                 padding='same',
                 use_bias=False,
-                kernel_initializer = conv_init,
+                kernel_initializer=conv_init,
             )
         )
         model.add(InstanceNormalization(
-                gamma_initializer=gamma_init,
+            gamma_initializer=gamma_init,
+        ))
+        model.add(Activation('relu'))
+
+        model.add(
+            Conv2D(
+                filters=self.ngf*4,
+                kernel_size=k,
+                strides=1,
+                padding='same',
+                use_bias=False,
+                kernel_initializer=conv_init,
             )
         )
-        model.add(LeakyReLU(alpha=0.2))
+        model.add(InstanceNormalization(
+            gamma_initializer=gamma_init,
+        ))
+        model.add(Activation('relu'))
+
+        model.add(
+            Conv2D(
+                filters=self.ngf*4,
+                kernel_size=k,
+                strides=1,
+                padding='same',
+                use_bias=False,
+                kernel_initializer=conv_init,
+            )
+        )
+        model.add(InstanceNormalization(
+            gamma_initializer=gamma_init,
+        ))
+        model.add(Activation('relu'))
+
+        model.add(
+            Conv2D(
+                filters=self.ngf*4,
+                kernel_size=k,
+                strides=1,
+                padding='same',
+                use_bias=False,
+                kernel_initializer=conv_init,
+            )
+        )
+        model.add(InstanceNormalization(
+            gamma_initializer=gamma_init,
+        ))
+        model.add(Activation('relu'))
 
         #########################
         # DECODING LAYERS
         #########################
 
         model.add(Conv2DTranspose(
-                filters=256,
-                kernel_size=k,
-                strides=s,
-                padding='same',
-                use_bias=False,
-                kernel_initializer = conv_init,
-            )
-        )
-        model.add(
-            InstanceNormalization(
-                gamma_initializer=gamma_init,
-            )
-        )
-        model.add(Activation('relu'))
-
-        model.add(Conv2DTranspose(
-            filters=128,
+            filters=self.ngf*2,
             kernel_size=k,
             strides=s,
             padding='same',
             use_bias=False,
-            kernel_initializer = conv_init,
-            )
+            kernel_initializer=conv_init,
+        )
         )
         model.add(
             InstanceNormalization(
@@ -205,13 +244,13 @@ class CycleGAN():
         model.add(Activation('relu'))
 
         model.add(Conv2DTranspose(
-                filters=64,
-                kernel_size=k,
-                strides=s,
-                padding='same',
-                use_bias=False,
-                kernel_initializer = conv_init,
-            )
+            filters=self.ngf,
+            kernel_size=k,
+            strides=s,
+            padding='same',
+            use_bias=False,
+            kernel_initializer=conv_init,
+        )
         )
         model.add(
             InstanceNormalization(
@@ -228,8 +267,8 @@ class CycleGAN():
                 strides=s,
                 padding='same',
                 use_bias=False,
-                kernel_initializer = conv_init,
-                
+                kernel_initializer=conv_init,
+
             )
         )
         model.add(Activation('tanh'))
@@ -251,7 +290,7 @@ class CycleGAN():
         # First Layer
         model.add(
             Conv2D(
-                filters=64//2,
+                filters=self.ndf,
                 kernel_size=4,
                 strides=s,
                 padding='same',
@@ -259,12 +298,13 @@ class CycleGAN():
                 input_shape=self.img_shape,
             )
         )
+        model.add(InstanceNormalization())
         model.add(LeakyReLU(alpha=0.2))
 
         # Layer 2
         model.add(
             Conv2D(
-                filters=128//2,
+                filters=self.ndf*2,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -277,7 +317,7 @@ class CycleGAN():
         # Layer 3
         model.add(
             Conv2D(
-                filters=256//2,
+                filters=self.ndf*4,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -290,20 +330,7 @@ class CycleGAN():
         # Layer 4
         model.add(
             Conv2D(
-                filters=512//2,
-                kernel_size=k,
-                strides=s,
-                padding='same',
-                use_bias=False,
-            )
-        )
-        model.add(InstanceNormalization())
-        model.add(LeakyReLU(alpha=0.2))
-
-        # Layer 5
-        model.add(
-            Conv2D(
-                filters=1024//2,
+                filters=self.ndf*8,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -314,9 +341,16 @@ class CycleGAN():
         model.add(LeakyReLU(alpha=0.2))
 
         # Final Layer
-        model.add(Flatten())
-        model.add(Dropout(.3))
-        model.add(Dense(1, activation='sigmoid'))
+        model.add(
+            Conv2D(
+                filters=1,
+                kernel_size=k,
+                strides=1,
+                padding='same',
+                use_bias=False,
+                activation='sigmoid',
+            )
+        )
 
         model.summary()
 
@@ -325,8 +359,8 @@ class CycleGAN():
 
         return Model(img, validity)
 
-    def train(self, x_training_dir, y_training_dir, epochs, 
-              batch_size=1, save_interval=100, 
+    def train(self, x_training_dir, y_training_dir, epochs,
+              batch_size=1, save_interval=100,
               pexels_query=None, wikiart_painter=None):
 
         # ---------------------
@@ -359,7 +393,7 @@ class CycleGAN():
             self.img_shape,
             x_training_dir,
         )
-  
+
         Y_train = god.load_images(
             self.img_shape,
             y_training_dir,
@@ -368,8 +402,8 @@ class CycleGAN():
         start_time = datetime.datetime.now()
 
         # Adversarial loss ground truths
-        valid = np.ones((batch_size,) + self.disc_patch)
-        fake = np.zeros((batch_size,) + self.disc_patch)
+        valid = np.ones((batch_size, 8, 8, 1))
+        fake = np.zeros((batch_size, 8, 8, 1))
 
         for epoch in range(epochs):
             idx = np.random.randint(0, X_train.shape[0], batch_size)
@@ -377,7 +411,7 @@ class CycleGAN():
 
             idx = np.random.randint(0, Y_train.shape[0], batch_size)
             imgs_B = Y_train[idx]
-                
+
             # ----------------------
             #  Train Discriminators
             # ----------------------
@@ -404,46 +438,67 @@ class CycleGAN():
 
             # Train the generators
             g_loss = self.combined.train_on_batch([imgs_A, imgs_B],
-                                                    [valid, valid,
-                                                    imgs_A, imgs_B,
-                                                    imgs_A, imgs_B])
+                                                  [valid, valid,
+                                                   imgs_A, imgs_B,
+                                                   imgs_A, imgs_B])
 
             elapsed_time = datetime.datetime.now() - start_time
 
             # Plot the progress
             print("[Epoch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f, id: %05f] time: %s "
-                    % (epoch, epochs,
-                        d_loss[0], 100 *
-                        d_loss[1],
-                        g_loss[0],
-                        np.mean(
-                            g_loss[1:3]),
-                        np.mean(
-                            g_loss[3:5]),
-                        np.mean(
-                            g_loss[5:6]),
-                        elapsed_time))
+                  % (epoch, epochs,
+                     d_loss[0], 100 *
+                     d_loss[1],
+                     g_loss[0],
+                     np.mean(
+                         g_loss[1:3]),
+                     np.mean(
+                         g_loss[3:5]),
+                     np.mean(
+                         g_loss[5:6]),
+                     elapsed_time))
 
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
-                self.save_imgs(epoch)
+                idx = np.random.randint(0, X_train.shape[0], batch_size)
+                imgs_A = X_train[idx]
 
-    def save_imgs(self, epoch):
-        r, c = 3, 3
-        noise = np.random.normal(0, 1, (r * c, self.noise))
-        gen_imgs = self.generator.predict(noise)
+                idx = np.random.randint(0, Y_train.shape[0], batch_size)
+                imgs_B = Y_train[idx]
+                self.save_imgs(imgs_A, imgs_B, epoch)
+
+    def save_imgs(self, imgs_A, imgs_B, epoch):
+        os.makedirs('samples/cyclegan', exist_ok=True)
+        r, c = 2, 3
+
+        # Demo (for GIF)
+        #imgs_A = self.data_loader.load_img('datasets/apple2orange/testA/n07740461_1541.jpg')
+        #imgs_B = self.data_loader.load_img('datasets/apple2orange/testB/n07749192_4241.jpg')
+
+        # Translate images to the other domain
+        fake_B = self.gen_AtoB.predict(imgs_A)
+        fake_A = self.gen_BtoA.predict(imgs_B)
+        # Translate back to original domain
+        reconstr_A = self.gen_BtoA.predict(fake_B)
+        reconstr_B = self.gen_AtoB.predict(fake_A)
+
+        gen_imgs = np.concatenate(
+            [imgs_A, fake_B, reconstr_A, imgs_B, fake_A, reconstr_B])
 
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
 
+        titles = ['Original', 'Translated', 'Reconstructed']
         fig, axs = plt.subplots(r, c)
         cnt = 0
         for i in range(r):
             for j in range(c):
-                axs[i, j].imshow(gen_imgs[cnt, :, :, :])
+                axs[i, j].imshow(gen_imgs[cnt])
+                axs[i, j].set_title(titles[j])
                 axs[i, j].axis('off')
                 cnt += 1
-        fig.savefig("images/art_%d.png" % epoch)
+        fig.savefig("samples/cyclegan/art_%d.png" %
+                    (epoch))
         plt.close()
 
 
@@ -456,7 +511,7 @@ def parse_command_line_args():
     parser.add_argument('y_training_dir', type=str,
                         help='filepath of style set')
     parser.add_argument('-b', '--batchsize',
-                        default=32, type=int, help='size of batches per epoch')
+                        default=1, type=int, help='size of batches per epoch')
     parser.add_argument('-s', '--saveinterval',
                         type=int, default=100, help='interval to save sample images')
     parser.add_argument('-w', '--wikiart', type=str, default=None,
@@ -469,8 +524,6 @@ def parse_command_line_args():
 
 
 if __name__ == '__main__':
-
-    wikiart_profile = 'https://www.wikiart.org/en/profile/5c9ba655edc2c9b87424edfe/albums/favourites'
 
     args = parse_command_line_args()
     gan = CycleGAN()

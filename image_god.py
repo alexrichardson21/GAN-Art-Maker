@@ -27,9 +27,9 @@ class ImageGod():
         len_imgs = 0
         
         for filepath in glob.iglob('%s/*.jpg' % folder):
-
-            img = Image.open(filepath)
+            
             try:
+                img = Image.open(filepath)
                 img_data = np.array(
                     list(img.getdata()), dtype=np.dtype(np.uint16)
                 )
@@ -215,3 +215,8 @@ class ImageGod():
         # img.show()
 
         return img
+
+
+if __name__ == '__main__':
+    god = ImageGod()
+    god.transform_images((128,128,3), 'datasets/basquiat')

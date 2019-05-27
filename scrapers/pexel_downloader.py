@@ -1,7 +1,9 @@
-import requests
 import os
 import shutil
 import urllib.request
+
+import requests
+
 
 class PexelDownloader:
     def download_pexels_query(self, query, output_dir, max_imgs=2500):
@@ -22,13 +24,16 @@ class PexelDownloader:
 
         c = 0
 
+        print("Downloading pexel images ...")
+
         while (c < max_imgs and r['next_page']):
             print('\n%d / %d' % (c, max_imgs))
             for photo in r['photos']:
                 img = requests.get(
                     photo['src']['original'], stream=True)
                 if photo['photographer']:
-                    photographer = photo['photographer'].replace(' ', '-').lower() 
+                    photographer = photo['photographer'].replace(
+                        ' ', '-').lower()
                 else:
                     photographer = 'unknown'
                 if img.status_code == 200:
@@ -39,5 +44,5 @@ class PexelDownloader:
                     print('.', end='', flush=True)
                 else:
                     print('e', end='', flush=True)
-            
+
             r = requests.get(r['next_page'], headers=pexels_auth).json()
