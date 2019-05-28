@@ -10,8 +10,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 
 class WikiartScraper:
-    def scrape_art(self, output_dir, 
-                   wikiart_profile_url=None, style=None, painter=None):
+    def scrape_art(self, wikiart_url, output_dir):
 
         # Try opening webpage with selenium in Windows or Mac
         try:
@@ -19,19 +18,7 @@ class WikiartScraper:
         except:
             driver = webdriver.Chrome('./chromedrivers/chromedriver74')
         
-        if style:
-            style = style.replace(' ', '-').lower()
-            driver.get(
-                'https://www.wikiart.org/en/paintings-by-style/%s' % style)
-        elif painter:
-            painter = painter.replace(' ', '-').lower()
-            driver.get(
-                'https://www.wikiart.org/en/%s' % painter)
-        elif wikiart_profile_url:
-            driver.get(wikiart_profile_url)
-        else:
-            print('No style, painter, or wikiart profile given')
-            return 
+        driver.get(wikiart_url)
 
         # Clicks 'LOAD MORE' until all pictures are loaded 
         while(True):

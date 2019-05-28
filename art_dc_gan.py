@@ -24,6 +24,9 @@ class DCGAN():
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.noise = 200
 
+        self.ngf = 64
+        self.ndf = 32
+
         optimizer = Adam(0.0002, 0.5)
 
         # Build and compile the discriminator
@@ -66,7 +69,7 @@ class DCGAN():
 
         # Layer 2
         model.add(Conv2DTranspose(
-            filters=512,
+            filters=self.ngf*8,
             kernel_size=k,
             strides=s,
             padding='same',
@@ -77,7 +80,7 @@ class DCGAN():
 
         # Layer 3
         model.add(Conv2DTranspose(
-            filters=256,
+            filters=self.ngf*4,
             kernel_size=k,
             strides=s,
             padding='same',
@@ -88,7 +91,7 @@ class DCGAN():
 
         # Layer 4
         model.add(Conv2DTranspose(
-            filters=128,
+            filters=self.ngf*2,
             kernel_size=k,
             strides=s,
             padding='same',
@@ -99,7 +102,7 @@ class DCGAN():
 
         # Layer 5
         model.add(Conv2DTranspose(
-            filters=64,
+            filters=self.ngf,
             kernel_size=k,
             strides=s,
             padding='same',
@@ -137,7 +140,7 @@ class DCGAN():
         # First Layer
         model.add(
             Conv2D(
-                filters=64//2,
+                filters=self.ndf,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -150,7 +153,7 @@ class DCGAN():
         # Layer 2
         model.add(
             Conv2D(
-                filters=128//2,
+                filters=self.ndf*2,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -163,7 +166,7 @@ class DCGAN():
         # Layer 3
         model.add(
             Conv2D(
-                filters=256//2,
+                filters=self.ndf*4,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -176,7 +179,7 @@ class DCGAN():
         # Layer 4
         model.add(
             Conv2D(
-                filters=512//2,
+                filters=self.ndf*8,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -189,7 +192,7 @@ class DCGAN():
         # Layer 5
         model.add(
             Conv2D(
-                filters=1024//2,
+                filters=self.ndf*16,
                 kernel_size=k,
                 strides=s,
                 padding='same',
@@ -217,14 +220,6 @@ class DCGAN():
         #  Preprocessing
         # ---------------------
 
-        # Scrape from wikiart profile to output directory if url given
-        if wikiart_scrape_url:
-            ws = WikiartScraper()
-            ws.scrape_art(
-                wikiart_scrape_url,
-                training_dir,
-            )
-
         # Load from training_dir and normalize dataset
         god = ImageGod()
         
@@ -239,7 +234,7 @@ class DCGAN():
             god.transform_images(self.img_shape, training_dir)
             training_dir = training_dir + '_transformations'
 
-        # Load from x and y training_dir
+        # Load from x training_dir
         X_train = god.load_images(
             self.img_shape,
             training_dir,
@@ -290,10 +285,8 @@ class DCGAN():
             if epoch % save_interval == 0:
                 self.save_imgs(epoch)
 
-        # Save all three models
-        self.discriminator.save('art_gan_discriminator.h5')
+        # Save generator
         self.generator.save('art_gan_generator.h5')
-        self.combined.save('art_gan_combined.h5')
 
     def save_imgs(self, epoch):
         r, c = 3, 3

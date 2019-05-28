@@ -361,7 +361,7 @@ class CycleGAN():
 
     def train(self, x_training_dir, y_training_dir, epochs,
               batch_size=1, save_interval=100,
-              pexels_query=None, wikiart_painter=None):
+              pexels_query=None, wikiart_scrape_url=None):
 
         # ---------------------
         #  Preprocessing
@@ -378,11 +378,11 @@ class CycleGAN():
             x_training_dir = x_training_dir + '_crops'
 
         # Scrape painter's collection from wikiart as Y Train if given painter
-        if wikiart_painter:
+        if wikiart_scrape_url:
             ws = WikiartScraper()
             ws.scrape_art(
+                wikiart_scrape_url,
                 y_training_dir,
-                painter=wikiart_painter
             )
 
             god.transform_images(self.img_shape, y_training_dir, epochs=50)
@@ -466,7 +466,10 @@ class CycleGAN():
                 idx = np.random.randint(0, Y_train.shape[0], batch_size)
                 imgs_B = Y_train[idx]
                 self.save_imgs(imgs_A, imgs_B, epoch)
-
+        
+        self.gen_AtoB.save('cycle_gan_A_to_B_generator.h5')
+        self.gen_BtoA.save('cycle_gan_B_to_A_generator.h5')
+    
     def save_imgs(self, imgs_A, imgs_B, epoch):
         os.makedirs('samples/cyclegan', exist_ok=True)
         r, c = 2, 3
@@ -533,6 +536,6 @@ if __name__ == '__main__':
         epochs=args['epochs'],
         batch_size=args['batchsize'],
         save_interval=args['saveinterval'],
-        wikiart_painter=args['wikiart'],
+        wikiart_scrape_url=args['wikiart'],
         pexels_query=args['pexels']
     )
