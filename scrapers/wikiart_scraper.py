@@ -6,6 +6,7 @@ import urllib.request
 import itertools
 import bs4
 import shutil
+import glob
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
@@ -13,11 +14,14 @@ class WikiartScraper:
     def scrape_art(self, wikiart_url, output_dir):
 
         # Try opening webpage with selenium in Windows or Mac
-        try:
-            driver = webdriver.Chrome('./chromedrivers/chromedriver73win.exe')
-        except:
-            driver = webdriver.Chrome('./chromedrivers/chromedriver74')
+        for filepath in glob.iglob('./chromedrivers'):
+            try:
+                driver = webdriver.Chrome(filepath)
+                break
         
+        if not driver:
+            raise Exception('No working Chrome Driver')
+
         driver.get(wikiart_url)
 
         # Clicks 'LOAD MORE' until all pictures are loaded 
