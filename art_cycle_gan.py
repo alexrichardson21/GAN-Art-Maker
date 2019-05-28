@@ -2,12 +2,10 @@ from __future__ import division, print_function
 
 import argparse
 import datetime
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-
-from image_god import ImageGod
 from keras.activations import relu
 from keras.initializers import RandomNormal
 from keras.layers import Activation, Dense, Dropout, Flatten, Input, Reshape
@@ -17,6 +15,8 @@ from keras.models import Model, Sequential
 from keras.optimizers import Adam
 from keras_contrib.layers.normalization.instancenormalization import \
     InstanceNormalization
+
+from image_god import ImageGod
 from scrapers.pexel_downloader import PexelDownloader
 from scrapers.wikiart_scraper import WikiartScraper
 
@@ -27,14 +27,13 @@ class CycleGAN():
         self.img_cols = 128
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        
+
         self.ngf = 64
         self.ndf = 32
-        
+
         # Loss weights
         self.lambda_cycle = 10.0                    # Cycle-consistency loss
         self.lambda_id = 0.1 * self.lambda_cycle    # Identity loss
-
 
         optimizer = Adam(0.0002, 0.5)
 
@@ -158,7 +157,6 @@ class CycleGAN():
         )
         model.add(Activation('relu'))
 
-        
         #########################
         # TRANSITION LAYERS
         #########################
@@ -466,10 +464,10 @@ class CycleGAN():
                 idx = np.random.randint(0, Y_train.shape[0], batch_size)
                 imgs_B = Y_train[idx]
                 self.save_imgs(imgs_A, imgs_B, epoch)
-        
+
         self.gen_AtoB.save('cycle_gan_A_to_B_generator.h5')
         self.gen_BtoA.save('cycle_gan_B_to_A_generator.h5')
-    
+
     def save_imgs(self, imgs_A, imgs_B, epoch):
         os.makedirs('samples/cyclegan', exist_ok=True)
         r, c = 2, 3

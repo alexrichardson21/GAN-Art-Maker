@@ -3,7 +3,6 @@ from __future__ import division, print_function
 import argparse
 import datetime
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.activations import relu
@@ -224,7 +223,7 @@ class DCGAN():
 
         # Load from training_dir and normalize dataset
         god = ImageGod()
-        
+
         # Scrape painter's collection from wikiart as Y Train if given painter
         if wikiart_scrape_url:
             ws = WikiartScraper()
@@ -233,7 +232,8 @@ class DCGAN():
                 training_dir,
             )
 
-            god.transform_images(self.img_shape, training_dir, epochs=transform)
+            god.transform_images(
+                self.img_shape, training_dir, epochs=transform)
             training_dir = training_dir + '_transformations'
 
         # Load from x training_dir
@@ -283,8 +283,8 @@ class DCGAN():
             elapsed_time = datetime.datetime.now() - start_time
 
             # Plot the progress
-            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f] time: %s" %
-                  (epoch, d_loss[0], 100*d_loss[1], g_loss, elapsed_time))
+            print("%d/%d [D loss: %f, acc.: %.2f%%] [G loss: %f] time: %s" %
+                  (epoch, epochs, d_loss[0], 100*d_loss[1], g_loss, elapsed_time))
 
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
