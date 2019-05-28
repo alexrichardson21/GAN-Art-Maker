@@ -445,7 +445,7 @@ class CycleGAN():
             elapsed_time = datetime.datetime.now() - start_time
 
             # Plot the progress
-            print("[Epoch %d/%d] [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f, id: %05f] time: %s "
+            print("%d/%d [D loss: %f, acc: %3d%%] [G loss: %05f, adv: %05f, recon: %05f, id: %05f] time: %s "
                   % (epoch, epochs,
                      d_loss[0], 100 *
                      d_loss[1],

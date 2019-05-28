@@ -1,6 +1,8 @@
 from __future__ import division, print_function
 
 import argparse
+import datetime
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -240,6 +242,7 @@ class DCGAN():
             training_dir,
         )
 
+        start_time = datetime.datetime.now()
 
         half_batch = int(batch_size / 2)
 
@@ -277,16 +280,18 @@ class DCGAN():
             # Train the generator
             g_loss = self.combined.train_on_batch(noise, valid_y)
 
+            elapsed_time = datetime.datetime.now() - start_time
+
             # Plot the progress
-            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" %
-                  (epoch, d_loss[0], 100*d_loss[1], g_loss))
+            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f] time: %s" %
+                  (epoch, d_loss[0], 100*d_loss[1], g_loss, elapsed_time))
 
             # If at save interval => save generated image samples
             if epoch % save_interval == 0:
                 self.save_imgs(epoch)
 
         # Save generator
-        self.generator.save('art_gan_generator.h5')
+        self.generator.save('art_dc_gan_generator.h5')
 
     def save_imgs(self, epoch):
         r, c = 3, 3
