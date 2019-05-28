@@ -216,7 +216,7 @@ class DCGAN():
 
         return Model(img, validity)
 
-    def train(self, training_dir, epochs, batch_size=32, save_interval=100, transform=0, wikiart_scrape_url=None):
+    def train(self, training_dir, epochs, batch_size=32, save_interval=100, transform=50, wikiart_scrape_url=None):
 
         # ---------------------
         #  Preprocessing
@@ -233,7 +233,7 @@ class DCGAN():
                 training_dir,
             )
 
-            god.transform_images(self.img_shape, training_dir)
+            god.transform_images(self.img_shape, training_dir, epochs=transform)
             training_dir = training_dir + '_transformations'
 
         # Load from x training_dir
@@ -324,8 +324,8 @@ def parse_command_line_args():
                         type=int, default=100, help='interval to save sample images')
     parser.add_argument('-w', '--wikiart', type=str, default=None,
                         help='url of wikiart profile to dowload from')
-    parser.add_argument('-t', '--transform', type=int, default=0,
-                        help='number of transformations applied to each picture (default: no transformation)')
+    parser.add_argument('-t', '--transform', type=int, default=50,
+                        help='number of transformations applied to each picture')
     return vars(parser.parse_args())
     # print(args)
 
